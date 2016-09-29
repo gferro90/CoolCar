@@ -1,0 +1,6 @@
+#-include $(LEVEL_1)/PlatformDefinitions
+DIR := ${CURDIR}
+export FINAL_TARGET_INCLUDES = $(DIR)/STM32Platform
+export __TIMER__NAME__=TIM6
+export LEVEL_2 := ${CURDIR}
+
