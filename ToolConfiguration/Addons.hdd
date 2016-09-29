@@ -7,6 +7,10 @@ ADC_HandleTypeDef * Get_ADC_Handle(unsigned int number) {
 	return ADC_Handles[number];
 }
 
+UART_HandleTypeDef *errorUartHandle = &huart4;
+
+
+
 /*
 DMA_HandleTypeDef * DMA_Handles[] = { &hdma_adc1, NULL, NULL};
 

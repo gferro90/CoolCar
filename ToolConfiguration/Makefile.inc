@@ -35,7 +35,7 @@ OBJSX := $(C_FILES:.c=.x)
 
 include $(MAKEDEFAULTDIR)/MakeStdLibDefs.$(TARGET)
 
-BUILD_DIR=../Build
+BUILD_DIR=../MARTe/Build
 
 INCLUDES += -I.
 INCLUDES += -I$(STM_CUBE_FW_DIR)/Drivers/CMSIS/Include/
@@ -50,7 +50,7 @@ CFLAGS += -DINCLUDE_xTaskGetCurrentTaskHandle=1
 
 all: update_main \
 	$(OBJS) \
-	$(BUILD_DIR)/STM32PlatformLib$(LIBEXT) \
+	$(BUILD_DIR)/ToolConfigurationLib$(LIBEXT) \
 	copy_startup
 
 update_main:
@@ -58,11 +58,11 @@ update_main:
 	sed -i '/int main(void)/,/while (1)/ s/StartDefaultTask/UserMainFunction/' main.c
 	grep -q 'osThreadDef' main.c || sed -i 's/osKernelStart();/osThreadDef(UserMainThread, UserMainFunction, osPriorityNormal, 0, configMINIMAL_STACK_SIZE); osThreadCreate(osThread(UserMainThread), NULL);&/' main.c
 	ls Addons.hdd && grep -q 'Addons' main.c || sed -i 's/int main(void)/#include "Addons.hdd"\n\r&/' main.c
-	cp usbd_cdc_if_template_c usbd_cdc_if.c
-	cp usbd_cdc_if_template_h usbd_cdc_if.h
+	if [ -f usbd_cdc_if.c ]; then cp usbd_cdc_if_template_c usbd_cdc_if.c; fi
+	if [ -f usbd_cdc_if.h ]; then cp usbd_cdc_if_template_h usbd_cdc_if.h; fi
 	
 copy_startup:
-	cp startup*.s ../
+	cp startup*.s ../MARTe
 
 include $(MAKEDEFAULTDIR)/MakeStdLibRules.$(TARGET)
 

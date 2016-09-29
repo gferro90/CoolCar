@@ -1,8 +1,8 @@
 /**
- * @file CoolCarControlGAM.cpp
- * @brief Source file for class CoolCarControlGAM
- * @date 28/set/2016
- * @author pc
+ * @file HighResolutionTimerOS.cpp
+ * @brief Source file for class HighResolutionTimerOS
+ * @date 05/07/2015
+ * @author André Neto
  *
  * @copyright Copyright 2015 F4E | European Joint Undertaking for ITER and
  * the Development of Fusion Energy ('Fusion for Energy').
@@ -17,20 +17,24 @@
  * or implied. See the Licence permissions and limitations under the Licence.
 
  * @details This source file contains the definition of all the methods for
- * the class CoolCarControlGAM (public, protected, and private). Be aware that some 
+ * the class HighResolutionTimerCalibrator (public, protected, and private). Be aware that some
  * methods, such as those inline could be defined on the header file, instead.
  */
 
 /*---------------------------------------------------------------------------*/
 /*                         Standard header includes                          */
 /*---------------------------------------------------------------------------*/
+#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_tim.h"
+#include "cmsis_os.h"
 
 /*---------------------------------------------------------------------------*/
 /*                         Project header includes                           */
 /*---------------------------------------------------------------------------*/
 
-#include "CoolCarControlGAM.h"
-
+#include "HighResolutionTimerCalibrator.h"
+#include "HighResolutionTimer.h"
+#include "StringHelper.h"
 /*---------------------------------------------------------------------------*/
 /*                           Static definitions                              */
 /*---------------------------------------------------------------------------*/
@@ -38,60 +42,40 @@
 /*---------------------------------------------------------------------------*/
 /*                           Method definitions                              */
 /*---------------------------------------------------------------------------*/
+namespace MARTe {
 
-CoolCarControlGAM::CoolCarControlGAM() {
-    // Auto-generated constructor stub for CoolCarControlGAM
-    // TODO Verify if manual additions are needed
+HighResolutionTimerCalibrator calibratedHighResolutionTimer;
+
+HighResolutionTimerCalibrator::HighResolutionTimerCalibrator() {
+    frequency = osKernelSysTickFrequency;
+    period = 1.0 / osKernelSysTickFrequency;
 }
 
-CoolCarControlGAM::~CoolCarControlGAM() {
-    // Auto-generated destructor stub for CoolCarControlGAM
-    // TODO Verify if manual additions are needed
-}
-
-bool CoolCarControlGAM::Initialise(StructuredDataI &data) {
-    bool ret = GAM::Initialise(data);
-    //todo custom initialisation
-
-    if (ret) {
-
-        ret = data.Read("MinMotorRef", minMotorRef);
-        if (ret) {
-            ret = data.Read("MaxMotorRef", rangeMotorRef);
-        }
-        else {
-            //todo error
-        }
-        if (ret) {
-            rangeMotorRef -= minMotorRef;
-        }
-        if (ret) {
-            ret = data.Read("MinMotorIn", minMotorIn);
-        }
-        else {
-            //todo error
-        }
-        if (ret) {
-            ret = data.Read("MaxMotorIn", rangeMotorIn);
-        }
-        else{
-            //todo error
-        }
-        if (ret) {
-            rangeMotorIn -= minMotorIn;
-        }
-    }
-
-    return ret;
-}
-
-bool CoolCarControlGAM::Execute() {
-    //read the ADC (done by input broker)
-    //map adc value on pwm duty cycle (to be done here)
-    uint32 *adcValue = (uint32 *) GetInputSignalMemory();
-    uint32 *pwmValue =(uint32 *) GetOutputSignalMemory()
-
-    *pwmValue = minMotorIn + ((*adcValue - minMotorRef) / (rangeMotorRef)) * rangeMotorIn;
-    //write on pwm (done by output broker)
+bool HighResolutionTimerCalibrator::GetTimeStamp(TimeStamp &timeStamp) const {
+    uint32 microSecondsFromStart = static_cast<uint32>(HighResolutionTimer::Counter() * HighResolutionTimer::Period() * 1000000);
+    timeStamp.SetMicroseconds((microSecondsFromStart % 1000000) * 1000000);
+    uint32 secondsFromStart = static_cast<uint32>(HighResolutionTimer::Counter() * HighResolutionTimer::Period());
+    timeStamp.SetDay(secondsFromStart / 86400000);
+    timeStamp.SetHour(secondsFromStart / 3600);
+    timeStamp.SetMinutes((secondsFromStart % 3600) / 60);
+    timeStamp.SetSeconds((secondsFromStart % 3600) % 60);
     return true;
+}
+
+uint64 HighResolutionTimerCalibrator::GetFrequency() const {
+    return frequency;
+}
+
+float64 HighResolutionTimerCalibrator::GetPeriod() const {
+    return period;
+}
+
+uint64 HighResolutionTimerCalibrator::Counter() {
+    return Counter32();
+}
+
+uint32 HighResolutionTimerCalibrator::Counter32() {
+    return HAL_GetTick() + __TIMER__NAME__->CNT;
+}
+
 }

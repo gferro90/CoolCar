@@ -48,10 +48,13 @@ public:
 
     virtual bool Initialise(StructuredDataI &data);
 
+    virtual bool SetConfiguredDatabase(StructuredDataI & data);
+
     virtual bool Execute();
 
 private:
-
+    uint32 *adcValue;
+    uint32 *pwmValue;
     uint32 minMotorRef;
     uint32 rangeMotorRef;
     uint32 minMotorIn;

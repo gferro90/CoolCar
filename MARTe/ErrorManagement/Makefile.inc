@@ -25,25 +25,17 @@
 #############################################################
 
 
-OBJSX=	startup_main.x startup_stm32f407xx.x
--include PlatformDefinitions
+OBJSX=	ErrorFunction.x
 
-SPB = ../ToolConfiguration.x GAMs/CoolCarControlGAM.x  Scheduler.x ErrorManagement.x 
+SPB = 
 
 MAKEDEFAULTDIR=$(MARTE2_DIR)/MakeDefaults
 
 include $(MAKEDEFAULTDIR)/MakeStdLibDefs.$(TARGET)
 
-BUILD_DIR=Build
-LINKER_LD_FILE=stm32_flash.ld
-CFLAGS += -D__SCHEDULER__=$(SCHEDULER_NAME)
-CFLAGS += -D__CFG__FILE__=$(CFG_FILE)
-CPPFLAGS += -Dmain=UserMainFunction 
+BUILD_DIR=../Build
 
-INCLUDES += -I../ToolConfiguration
-INCLUDES += -IScheduler
-INCLUDES += -IErrorManagement
-INCLUDES += -IGAMs
+INCLUDES += -I../../ToolConfiguration
 INCLUDES += -I$(MARTE2_DIR)/Source/Core/BareMetal/L0Types/
 INCLUDES += -I$(MARTE2_DIR)/Source/Core/BareMetal/L0Types/
 INCLUDES += -I$(MARTE2_DIR)/Source/Core/BareMetal/L1Portability/
@@ -62,36 +54,8 @@ INCLUDES += -I$(STM_CUBE_FW_DIR)/Drivers/CMSIS/Include/
 INCLUDES += -I$(STM_CUBE_FW_DIR)/Drivers/BSP/Components/otm8009a/
 INCLUDES += -I$(STM_CUBE_FW_DIR)/Drivers/STM32F4xx_HAL_Driver/Src/
 
-# Static project libraries
-LIBRARIES_STATIC = Build/ToolConfigurationLib.a
-LIBRARIES_STATIC += Build/CoolCarControlGAM.a
-LIBRARIES_STATIC += Build/Scheduler.a
-LIBRARIES_STATIC += Build/ErrorManagement.a
-
-
-# Static platform libraries
-#LIBRARIES_STATIC += ../../Build/TimerDataSource.a
-#LIBRARIES_STATIC += ../../Build/ADC_DMADataSource.a
-
-# Static MARTe libraries
-LIBRARIES_STATIC += $(MARTE2_DIR)/Build/$(TARGET)/Core/BareMetal/MARTeCoreB.a
-LIBRARIES_STATIC += $(MARTE2_DIR)/Build/$(TARGET)/Core/Scheduler/MARTeCoreS.a
-
-#CPPFLAGS += -Dmain=UserMainFunction 
-#CPPFLAGS += -DconfigCHECK_FOR_STACK_OVERFLOW=1 
-#CPPFLAGS += -DINCLUDE_uxTaskGetStackHighWaterMark=1
-
-#CPPFLAGS += -D__CFG__FILE__=Configuration/UsbSignalDisplay.cfg
-#CPPFLAGS += -D__CFG__FILE__=Configuration/UsbCommunication.cfg
-
-#OBJS += $(BUILD_DIR)/startup_main.o
-#OBJS += $(shell find $(MARTE2_DIR)/Build/$(TARGET)/Core/BareMetal/ -name *.o | grep -v Test)
-#OBJS += $(shell find $(MARTE2_DIR)/Build/$(TARGET)/Core/Scheduler/ -name *.o | grep -v Test)
-
 all: $(SUBPROJ) $(OBJS) \
-	$(BUILD_DIR)/output$(HEXEXT)\
-	$(BUILD_DIR)/output$(EXEEXT)\
-	$(BUILD_DIR)/output$(ELFEXT)
+	$(BUILD_DIR)/ErrorManagement$(LIBEXT)
 
 include $(MAKEDEFAULTDIR)/MakeStdLibRules.$(TARGET)
 

@@ -49,9 +49,9 @@
 using namespace MARTe;
 
 
-const char8 *const config =
-#include INCLUDE_CFG_FILE(__CFG__FILE__)
-;
+const char8 *const config ="";
+/*#include INCLUDE_CFG_FILE(__CFG__FILE__)
+;*/
 
 //WHY???? I need this otherwise the class registered won't be linked °_°
 StreamString boh;
