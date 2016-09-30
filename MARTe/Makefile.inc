@@ -28,7 +28,11 @@
 OBJSX=	startup_main.x startup_stm32f407xx.x
 -include PlatformDefinitions
 
-SPB = ../ToolConfiguration.x GAMs/CoolCarControlGAM.x  Scheduler.x ErrorManagement.x 
+SPB = ../ToolConfiguration.x GAMs/CoolCarControlGAM.x  Scheduler.x ErrorManagement.x \
+	$(MARTE2_TOOLS)/DataSources/ADC_DMA.x \
+	$(MARTE2_TOOLS)/DataSources/PWM.x \
+	$(MARTE2_TOOLS)/DataSources/Timer.x \
+	$(MARTE2_TOOLS)/DataSources/USBSignalDisplay.x
 
 MAKEDEFAULTDIR=$(MARTE2_DIR)/MakeDefaults
 
@@ -70,19 +74,14 @@ LIBRARIES_STATIC += Build/ErrorManagement.a
 
 
 # Static platform libraries
-#LIBRARIES_STATIC += ../../Build/TimerDataSource.a
-#LIBRARIES_STATIC += ../../Build/ADC_DMADataSource.a
+LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/TimerDataSource.a
+LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/ADC_DMADataSource.a
+LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/PWMDataSource.a
+LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/USBSignalDisplay.a
 
 # Static MARTe libraries
 LIBRARIES_STATIC += $(MARTE2_DIR)/Build/$(TARGET)/Core/BareMetal/MARTeCoreB.a
 LIBRARIES_STATIC += $(MARTE2_DIR)/Build/$(TARGET)/Core/Scheduler/MARTeCoreS.a
-
-#CPPFLAGS += -Dmain=UserMainFunction 
-#CPPFLAGS += -DconfigCHECK_FOR_STACK_OVERFLOW=1 
-#CPPFLAGS += -DINCLUDE_uxTaskGetStackHighWaterMark=1
-
-#CPPFLAGS += -D__CFG__FILE__=Configuration/UsbSignalDisplay.cfg
-#CPPFLAGS += -D__CFG__FILE__=Configuration/UsbCommunication.cfg
 
 #OBJS += $(BUILD_DIR)/startup_main.o
 #OBJS += $(shell find $(MARTE2_DIR)/Build/$(TARGET)/Core/BareMetal/ -name *.o | grep -v Test)

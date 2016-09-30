@@ -46,6 +46,10 @@ CoolCarControlGAM::CoolCarControlGAM() {
 
     adcValue = NULL;
     pwmValue = NULL;
+    usb[0] = NULL;
+    usb[1] = NULL;
+    usb[2] = NULL;
+    timer = NULL;
     minMotorRef = 0u;
     rangeMotorRef = 0u;
     minMotorIn = 0u;
@@ -63,7 +67,6 @@ bool CoolCarControlGAM::Initialise(StructuredDataI &data) {
     //todo custom initialisation
 
     if (ret) {
-
         ret = data.Read("MinMotorRef", minMotorRef);
         if (ret) {
             ret = data.Read("MaxMotorRef", rangeMotorRef);
@@ -99,11 +102,16 @@ bool CoolCarControlGAM::Initialise(StructuredDataI &data) {
 
 bool CoolCarControlGAM::SetConfiguredDatabase(StructuredDataI & data) {
     bool ret = GAM::SetConfiguredDatabase(data);
+
     if (ret) {
         //assign here the pointer to signals
+        timer = (uint32*) GetInputSignalsMemory();
+        adcValue = (uint32 *) GetInputSignalsMemory() + 1;
 
-        adcValue = (uint32 *) GetInputSignalsMemory();
-        pwmValue = (uint32 *) GetOutputSignalsMemory();
+        usb[0] = (uint32*) GetOutputSignalsMemory();
+        usb[1] = (uint32 *) GetOutputSignalsMemory() + 1;
+        usb[2] = (uint32 *) GetOutputSignalsMemory() + 2;
+        pwmValue = (uint32 *) GetOutputSignalsMemory() + 3;
     }
     return ret;
 }
@@ -111,8 +119,17 @@ bool CoolCarControlGAM::SetConfiguredDatabase(StructuredDataI & data) {
 bool CoolCarControlGAM::Execute() {
     //read the ADC (done by input broker)
     //map adc value on pwm duty cycle (to be done here)
+    REPORT_ERROR_PARAMETERS(ErrorManagement::Warning, "Executing... %d %d", rangeMotorRef, rangeMotorIn);
 
-    *pwmValue = minMotorIn + ((*adcValue - minMotorRef) / (rangeMotorRef)) * rangeMotorIn;
+    *(uint32*) GetOutputSignalsMemory() = *(uint32*) GetInputSignalsMemory();
+    float32 factor = ((*((uint32 *) GetInputSignalsMemory() + 1) - minMotorRef) / ((float32)rangeMotorRef));
+    float32 calc = minMotorIn + factor * rangeMotorIn;
+    *((uint32 *) GetOutputSignalsMemory() + 3) = (uint32) calc;
+    *((uint32 *) GetOutputSignalsMemory() + 1) = *((uint32 *) GetInputSignalsMemory() + 1);
+    *((uint32 *) GetOutputSignalsMemory() + 2) = *((uint32 *) GetOutputSignalsMemory() + 3);
+
     //write on pwm (done by output broker)
     return true;
 }
+
+CLASS_REGISTER(CoolCarControlGAM, "1.0")

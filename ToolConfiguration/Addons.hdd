@@ -1,15 +1,18 @@
 // to be added in main.c to get handles
 
+UART_HandleTypeDef *errorUartHandle = &huart4;
 
 ADC_HandleTypeDef * ADC_Handles[] = { &hadc1, NULL, NULL};
+
+TIM_HandleTypeDef * TIM_Handles[] = { NULL, NULL, NULL, &htim4, NULL, &htim6, NULL, NULL };
+
+TIM_HandleTypeDef * Get_TIM_Handle(unsigned int number) {
+	return TIM_Handles[number];
+}
 
 ADC_HandleTypeDef * Get_ADC_Handle(unsigned int number) {
 	return ADC_Handles[number];
 }
-
-UART_HandleTypeDef *errorUartHandle = &huart4;
-
-
 
 /*
 DMA_HandleTypeDef * DMA_Handles[] = { &hdma_adc1, NULL, NULL};

@@ -43,6 +43,8 @@ using namespace MARTe;
 
 class CoolCarControlGAM: public GAM {
 public:
+    CLASS_REGISTER_DECLARATION()
+
     CoolCarControlGAM();
     virtual ~CoolCarControlGAM();
 
@@ -55,6 +57,8 @@ public:
 private:
     uint32 *adcValue;
     uint32 *pwmValue;
+    uint32 *usb[3];
+    uint32 *timer;
     uint32 minMotorRef;
     uint32 rangeMotorRef;
     uint32 minMotorIn;
