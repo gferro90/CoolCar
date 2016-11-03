@@ -28,7 +28,8 @@
 OBJSX=	startup_main.x startup_stm32f407xx.x
 -include PlatformDefinitions
 
-SPB = ../ToolConfiguration.x GAMs/CoolCarControlGAM.x  Scheduler.x ErrorManagement.x \
+SPB = ../ToolConfiguration.x GAMs/CoolCarControlGAM.x GAMs/Transmitter.x  Scheduler.x ErrorManagement.x \
+	DataSources/SpiRadioModule.x \
 	$(MARTE2_TOOLS)/DataSources/ADC_DMA.x \
 	$(MARTE2_TOOLS)/DataSources/PWM.x \
 	$(MARTE2_TOOLS)/DataSources/Timer.x \
@@ -69,8 +70,10 @@ INCLUDES += -I$(STM_CUBE_FW_DIR)/Drivers/STM32F4xx_HAL_Driver/Src/
 # Static project libraries
 LIBRARIES_STATIC = Build/ToolConfigurationLib.a
 LIBRARIES_STATIC += Build/CoolCarControlGAM.a
+LIBRARIES_STATIC += Build/TransmitterGAM.a
 LIBRARIES_STATIC += Build/Scheduler.a
 LIBRARIES_STATIC += Build/ErrorManagement.a
+LIBRARIES_STATIC += Build/SpiRadioModule.a
 
 
 # Static platform libraries

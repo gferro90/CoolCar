@@ -1,7 +1,7 @@
 /**
- * @file CoolCarControlGAM.cpp
- * @brief Source file for class CoolCarControlGAM
- * @date 28/set/2016
+ * @file SpiRadioWriter.cpp
+ * @brief Source file for class SpiRadioWriter
+ * @date 18/ott/2016
  * @author pc
  *
  * @copyright Copyright 2015 F4E | European Joint Undertaking for ITER and
@@ -17,7 +17,7 @@
  * or implied. See the Licence permissions and limitations under the Licence.
 
  * @details This source file contains the definition of all the methods for
- * the class CoolCarControlGAM (public, protected, and private). Be aware that some 
+ * the class SpiRadioWriter (public, protected, and private). Be aware that some 
  * methods, such as those inline could be defined on the header file, instead.
  */
 
@@ -29,9 +29,8 @@
 /*                         Project header includes                           */
 /*---------------------------------------------------------------------------*/
 
-#include "CoolCarControlGAM.h"
-#include "AdvancedErrorManagement.h"
-
+#include "SpiRadioWriter.h"
+#include "SpiRadioModule.h"
 /*---------------------------------------------------------------------------*/
 /*                           Static definitions                              */
 /*---------------------------------------------------------------------------*/
@@ -40,57 +39,43 @@
 /*                           Method definitions                              */
 /*---------------------------------------------------------------------------*/
 
-CoolCarControlGAM::CoolCarControlGAM() {
-    // Auto-generated constructor stub for CoolCarControlGAM
+SpiRadioWriter::SpiRadioWriter():MemoryMapOutputBroker() {
+    // Auto-generated constructor stub for SpiRadioWriter
     // TODO Verify if manual additions are needed
-
-    pwmMotor = NULL;
-    pwmDrive = NULL;
-    refs = NULL;
-    usb[0] = NULL;
-    usb[1] = NULL;
-    usb[2] = NULL;
-    timer = NULL;
+    radio=NULL;
 
 }
 
-CoolCarControlGAM::~CoolCarControlGAM() {
-    // Auto-generated destructor stub for CoolCarControlGAM
+SpiRadioWriter::~SpiRadioWriter() {
+    // Auto-generated destructor stub for SpiRadioWriter
     // TODO Verify if manual additions are needed
 }
 
-bool CoolCarControlGAM::Initialise(StructuredDataI &data) {
-    bool ret = GAM::Initialise(data);
-    //todo custom initialisation
+
+bool SpiRadioWriter::Execute() {
+    uint32 n;
+    bool ret = true;
+    for (n = 0u; (n < numberOfCopies) && (ret); n++) {
+        if (copyTable != NULL_PTR(MemoryMapBrokerCopyTableEntry *)) {
+            radio->WritePacket((const char8 *)copyTable[n].gamPointer, copyTable[n].copySize);
+        }
+    }
     return ret;
 }
 
-void CoolCarControlGAM::Setup() {
-    //assign here the pointer to signals
-    timer = (uint32*) GetInputSignalsMemory();
-    refs = (uint16 *) GetInputSignalsMemory() + 2;
-
-    usb[0] = (uint32*) GetOutputSignalsMemory();
-    usb[1] = (uint32 *) GetOutputSignalsMemory() + 1;
-    usb[2] = (uint32 *) GetOutputSignalsMemory() + 2;
-    pwmMotor = (uint32 *) GetOutputSignalsMemory() + 3;
-    pwmDrive = (uint32 *) GetOutputSignalsMemory() + 4;
+bool SpiRadioWriter::Init(const SignalDirection direction,
+                     DataSourceI &dataSourceIn,
+                     const char8 * const functionName,
+                     void * const gamMemoryAddress) {
+    bool ret = MemoryMapOutputBroker::Init(direction, dataSourceIn, functionName, gamMemoryAddress);
+    if (ret) {
+        radio = dynamic_cast<SpiRadioModule*>(dataSource);
+        ret=(radio!=NULL);
+        if(!ret){
+            REPORT_ERROR(ErrorManagement::FatalError, "Failed dynamic_cast from DataSourceI* to SpiRadioModule*");
+        }
+    }
+    return ret;
 }
 
-bool CoolCarControlGAM::Execute() {
-    //read the ADC (done by input broker)
-    //map adc value on pwm duty cycle (to be done here)
-    //REPORT_ERROR_PARAMETERS(ErrorManagement::Warning, "Executing... %d %d", rangeMotorRef, rangeMotorIn);
-
-    *usb[0] = *timer;
-    *usb[1] = (uint32)((*refs) >> 8);
-    *usb[2] = (uint32)((*refs) & 0xff);
-
-    *pwmMotor = *usb[1];
-    *pwmDrive = *usb[2];
-
-    //write on pwm (done by output broker)
-    return true;
-}
-
-CLASS_REGISTER(CoolCarControlGAM, "1.0")
+CLASS_REGISTER(SpiRadioWriter, "1.0")

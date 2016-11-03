@@ -97,7 +97,6 @@ static void MARTeAppLauncher(void const *ignored) {
     }
 
     if (ok) {
-
         ok = application->PrepareNextState("State1");
     }
 

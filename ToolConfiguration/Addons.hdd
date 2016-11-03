@@ -2,22 +2,32 @@
 
 UART_HandleTypeDef *errorUartHandle = &huart4;
 
-ADC_HandleTypeDef * ADC_Handles[] = { &hadc1, NULL, NULL};
+struct identifier{
+	const char *id;
+	void *handle;
+};
 
-TIM_HandleTypeDef * TIM_Handles[] = { NULL, NULL, NULL, &htim4, NULL, &htim6, NULL, NULL };
 
-TIM_HandleTypeDef * Get_TIM_Handle(unsigned int number) {
-	return TIM_Handles[number];
+const struct identifier ids[]={
+	{"ADC1", &hadc1},
+	{"TIM6", &htim6},
+	{"TIM4", &htim4},
+	{"UART4", &huart4},
+	{"SPI2", &hspi2},
+	{"GPIOD", GPIOD},
+	{0,0}
+}; 
+
+
+void *GetHwHandle(const char *id){
+	int i=0;
+	while(ids[i].id!=NULL){
+		if(strcmp(ids[i].id, id)==0){
+			return ids[i].handle;
+		}
+		i++;
+	}
+	return 0;
 }
 
-ADC_HandleTypeDef * Get_ADC_Handle(unsigned int number) {
-	return ADC_Handles[number];
-}
 
-/*
-DMA_HandleTypeDef * DMA_Handles[] = { &hdma_adc1, NULL, NULL};
-
-ADC_HandleTypeDef * Get_DMA_Handle(unsigned int number) {
-	return ADC_Handles[number];
-}
-*/

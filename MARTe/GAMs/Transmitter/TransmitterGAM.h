@@ -1,8 +1,8 @@
 /**
- * @file CoolCarControlGAM.h
- * @brief Header file for class CoolCarControlGAM
- * @date 28/set/2016
- * @author Giuseppe Ferrò
+ * @file TransmitterGAM.h
+ * @brief Header file for class TransmitterGAM
+ * @date 19/ott/2016
+ * @author pc
  *
  * @copyright Copyright 2015 F4E | European Joint Undertaking for ITER and
  * the Development of Fusion Energy ('Fusion for Energy').
@@ -16,13 +16,13 @@
  * basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the Licence permissions and limitations under the Licence.
 
- * @details This header file contains the declaration of the class CoolCarControlGAM
+ * @details This header file contains the declaration of the class TransmitterGAM
  * with all of its public, protected and private members. It may also include
  * definitions for inline methods which need to be visible to the compiler.
  */
 
-#ifndef GAMS_COOLCARCONTROLGAM_H_
-#define GAMS_COOLCARCONTROLGAM_H_
+#ifndef MARTE_GAMS_TRANSMITTER_TRANSMITTERGAM_H_
+#define MARTE_GAMS_TRANSMITTER_TRANSMITTERGAM_H_
 
 /*---------------------------------------------------------------------------*/
 /*                        Standard header includes                           */
@@ -41,12 +41,12 @@
 
 using namespace MARTe;
 
-class CoolCarControlGAM: public GAM {
+class TransmitterGAM: public GAM {
 public:
     CLASS_REGISTER_DECLARATION()
 
-    CoolCarControlGAM();
-    virtual ~CoolCarControlGAM();
+    TransmitterGAM();
+    virtual ~TransmitterGAM();
 
     virtual bool Initialise(StructuredDataI &data);
 
@@ -55,16 +55,23 @@ public:
     virtual bool Execute();
 
 private:
-    uint16 *refs;
-    uint32 *pwmMotor;
-    uint32 *pwmDrive;
-    uint32 *usb[3];
+    uint32 *adcMotor;
+    uint32 *adcDrive;
+    uint16 *pwms;
+    uint32 *usb[5];
     uint32 *timer;
+    uint32 minMotorRef;
+    uint32 rangeMotorRef;
+    uint32 minMotorIn;
+    uint32 rangeMotorIn;
+    uint32 minDriveRef;
+    uint32 rangeDriveRef;
+    uint32 minDriveIn;
+    uint32 rangeDriveIn;
 };
-
 /*---------------------------------------------------------------------------*/
 /*                        Inline method definitions                          */
 /*---------------------------------------------------------------------------*/
 
-#endif /* GAMS_COOLCARCONTROLGAM_H_ */
+#endif /* MARTE_GAMS_TRANSMITTER_TRANSMITTERGAM_H_ */
 

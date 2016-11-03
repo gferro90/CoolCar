@@ -1,8 +1,8 @@
 /**
- * @file CoolCarControlGAM.h
- * @brief Header file for class CoolCarControlGAM
- * @date 28/set/2016
- * @author Giuseppe Ferrò
+ * @file SpiRadioWriter.h
+ * @brief Header file for class SpiRadioWriter
+ * @date 18/ott/2016
+ * @author pc
  *
  * @copyright Copyright 2015 F4E | European Joint Undertaking for ITER and
  * the Development of Fusion Energy ('Fusion for Energy').
@@ -16,13 +16,13 @@
  * basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the Licence permissions and limitations under the Licence.
 
- * @details This header file contains the declaration of the class CoolCarControlGAM
+ * @details This header file contains the declaration of the class SpiRadioWriter
  * with all of its public, protected and private members. It may also include
  * definitions for inline methods which need to be visible to the compiler.
  */
 
-#ifndef GAMS_COOLCARCONTROLGAM_H_
-#define GAMS_COOLCARCONTROLGAM_H_
+#ifndef MARTE_DATASOURCES_SPIRADIOWRITER_H_
+#define MARTE_DATASOURCES_SPIRADIOWRITER_H_
 
 /*---------------------------------------------------------------------------*/
 /*                        Standard header includes                           */
@@ -31,40 +31,37 @@
 /*---------------------------------------------------------------------------*/
 /*                        Project header includes                            */
 /*---------------------------------------------------------------------------*/
-
-#include "GAM.h"
-#include "ConfigurationDatabase.h"
+#include "MemoryMapOutputBroker.h"
+#include "stm32f4xx_hal.h"
 
 /*---------------------------------------------------------------------------*/
 /*                           Class declaration                               */
 /*---------------------------------------------------------------------------*/
-
 using namespace MARTe;
 
-class CoolCarControlGAM: public GAM {
+class SpiRadioModule;
+
+class SpiRadioWriter: public MemoryMapOutputBroker {
 public:
     CLASS_REGISTER_DECLARATION()
 
-    CoolCarControlGAM();
-    virtual ~CoolCarControlGAM();
-
-    virtual bool Initialise(StructuredDataI &data);
-
-    virtual void Setup();
-
+    SpiRadioWriter();
+    virtual ~SpiRadioWriter();
     virtual bool Execute();
 
+    virtual bool Init(const SignalDirection direction,
+                      DataSourceI &dataSourceIn,
+                      const char8 * const functionName,
+                      void * const gamMemoryAddress);
 private:
-    uint16 *refs;
-    uint32 *pwmMotor;
-    uint32 *pwmDrive;
-    uint32 *usb[3];
-    uint32 *timer;
+
+    SpiRadioModule* radio;
+
 };
 
 /*---------------------------------------------------------------------------*/
 /*                        Inline method definitions                          */
 /*---------------------------------------------------------------------------*/
 
-#endif /* GAMS_COOLCARCONTROLGAM_H_ */
+#endif /* MARTE_DATASOURCES_SPIRADIOWRITER_H_ */
 
