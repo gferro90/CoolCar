@@ -13,7 +13,7 @@ export FREE_RTOS_CONFIG_DIRECTORY=$(DIR)/../ToolConfiguration
 
 export TARGET=armv7em-freertos
 
-CFG_FILE=$(DIR)/Configuration/Transmitter.cfg
+CFG_FILE=$(DIR)/Configuration/Receiver.cfg
 SCHEDULER_DIR=$(DIR)/Scheduler
 SCHEDULER_NAME = $(DIR)/Scheduler/BasicScheduler
 export FINAL_TARGET_INCLUDES = $(DIR)/STM32Platform

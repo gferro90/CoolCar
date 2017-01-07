@@ -346,7 +346,7 @@ bool SpiRadioModule::ReadPacket(char8 * buffer,
 
     MemoryOperationsHelper::Set(txBuffer, 0, TX_BUFFER_LENGTH);
     MemoryOperationsHelper::Set(rxBuffer, 0, RX_BUFFER_LENGTH);
-    HAL_Delay(1);
+    //HAL_Delay(1);
     txBuffer[0] = READ_REGISTER(FIFO_STATUS);
     CSN_L;
     SPI_TX_RX(txBuffer, rxBuffer, 2);
@@ -355,7 +355,7 @@ bool SpiRadioModule::ReadPacket(char8 * buffer,
 
     MemoryOperationsHelper::Set(txBuffer, 0, TX_BUFFER_LENGTH);
     MemoryOperationsHelper::Set(rxBuffer, 0, RX_BUFFER_LENGTH);
-    HAL_Delay(1);
+    //HAL_Delay(1);
 
     received = (status & 0x40);    // || (!(rxBuffer[1] & 0x1));
     if (received) {
@@ -382,7 +382,7 @@ bool SpiRadioModule::ReadPacket(char8 * buffer,
     //if (received) {
     MemoryOperationsHelper::Set(txBuffer, 0, TX_BUFFER_LENGTH);
     MemoryOperationsHelper::Set(rxBuffer, 0, RX_BUFFER_LENGTH);
-    HAL_Delay(1);
+    //HAL_Delay(1);
     txBuffer[0] = WRITE_REGISTER(STATUS);
     //the first byte of rx should always be the status reg.
     txBuffer[1] = (status | (status & 0x70));
@@ -391,15 +391,15 @@ bool SpiRadioModule::ReadPacket(char8 * buffer,
     CSN_H;
     //}
 
-    HAL_Delay(1);
+    //HAL_Delay(1);
     MemoryOperationsHelper::Set(txBuffer, 0, TX_BUFFER_LENGTH);
     MemoryOperationsHelper::Set(rxBuffer, 0, RX_BUFFER_LENGTH);
-    HAL_Delay(1);
+    //HAL_Delay(1);
     txBuffer[0] = FLUSH_RX;
     CSN_L;
     SPI_TX_RX(txBuffer, rxBuffer, 1);
     CSN_H;
-    HAL_Delay(1);
+    //HAL_Delay(1);
     //restart listening
     CE_H;
 
@@ -413,7 +413,7 @@ bool SpiRadioModule::WritePacket(const char8* buffer,
 
     MemoryOperationsHelper::Set(txBuffer, 0, TX_BUFFER_LENGTH);
     MemoryOperationsHelper::Set(rxBuffer, 0, RX_BUFFER_LENGTH);
-    HAL_Delay(1);
+    //HAL_Delay(1);
     txBuffer[0] = FLUSH_TX;
     CSN_L;
     SPI_TX_RX(txBuffer, rxBuffer, 1);
@@ -421,7 +421,7 @@ bool SpiRadioModule::WritePacket(const char8* buffer,
 
     MemoryOperationsHelper::Set(txBuffer, 0, TX_BUFFER_LENGTH);
     MemoryOperationsHelper::Set(rxBuffer, 0, RX_BUFFER_LENGTH);
-    HAL_Delay(1);
+    //HAL_Delay(1);
     txBuffer[0] = W_TX_PAYLOAD;
     MemoryOperationsHelper::Copy(txBuffer + 1, buffer, length);
     //we should obtain in rxBuffer the status register
@@ -433,7 +433,7 @@ bool SpiRadioModule::WritePacket(const char8* buffer,
 
     MemoryOperationsHelper::Set(txBuffer, 0, TX_BUFFER_LENGTH);
     MemoryOperationsHelper::Set(rxBuffer, 0, RX_BUFFER_LENGTH);
-    HAL_Delay(1);
+    //HAL_Delay(1);
     txBuffer[0] = READ_REGISTER(FIFO_STATUS);
     CSN_L;
     SPI_TX_RX(txBuffer, rxBuffer, 2);
@@ -452,20 +452,20 @@ bool SpiRadioModule::WritePacket(const char8* buffer,
     while (!transmitted) {
         MemoryOperationsHelper::Set(txBuffer, 0, TX_BUFFER_LENGTH);
         MemoryOperationsHelper::Set(rxBuffer, 0, RX_BUFFER_LENGTH);
-        HAL_Delay(1);
+        //HAL_Delay(1);
         txBuffer[0] = READ_REGISTER(STATUS);
         //the first byte of rx should always be the status reg.
         CSN_L;
         SPI_TX_RX(txBuffer, rxBuffer, 2);
         CSN_H;
         transmitted = (rxBuffer[0] & 0x30);
-        HAL_Delay(1);
+        //HAL_Delay(1);
 
     }
 
     MemoryOperationsHelper::Set(txBuffer, 0, TX_BUFFER_LENGTH);
     MemoryOperationsHelper::Set(rxBuffer, 0, RX_BUFFER_LENGTH);
-    HAL_Delay(1);
+    //HAL_Delay(1);
     txBuffer[0] = WRITE_REGISTER(STATUS);
     //the first byte of rx should always be the status reg.
     txBuffer[1] = (status | (status & 0x70));
@@ -490,14 +490,14 @@ void SpiRadioModule::StartListening() {
          CSN_L;
          SPI_TX_RX((char8*)txBuffer, (char8*)rxBuffer, 2);
          CSN_H;*/
-        HAL_Delay(1);
+        //HAL_Delay(1);
         txBuffer[0] = WRITE_REGISTER(CONFIG);
         //the first byte of rx should always be the status reg.
         txBuffer[1] = ((1 << EN_CRC) | (1 << CRCO) | (1 << PWR_UP) | (1 << PRIM_RX));
         CSN_L;
         SPI_TX_RX(txBuffer, rxBuffer, 2);
         CSN_H;
-        HAL_Delay(1);
+        //HAL_Delay(1);
         CE_H;
         listening = true;
     }
@@ -512,14 +512,14 @@ void SpiRadioModule::StopListening() {
         MemoryOperationsHelper::Set(rxBuffer, 0, RX_BUFFER_LENGTH);
         //standby mode
 
-        HAL_Delay(1);
+        //HAL_Delay(1);
         txBuffer[0] = WRITE_REGISTER(CONFIG);
         //the first byte of rx should always be the status reg.
         txBuffer[1] = ((1 << EN_CRC) | (1 << CRCO) | (1 << PWR_UP));
         CSN_L;
         SPI_TX_RX(txBuffer, rxBuffer, 2);
         CSN_H;
-        HAL_Delay(1);
+        //HAL_Delay(1);
         listening = false;
     }
 }
