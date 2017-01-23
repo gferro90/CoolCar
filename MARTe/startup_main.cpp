@@ -45,27 +45,24 @@
 #include INCLUDE_SCHEDULER(__SCHEDULER__)
 
 /*#include "usbd_cdc_if.h"
-#include "cmsis_os.h"*/
+ #include "cmsis_os.h"*/
 using namespace MARTe;
-
 
 const char8 *const config =
 #include INCLUDE_CFG_FILE(__CFG__FILE__)
-;
+        ;
 
 //WHY???? I need this otherwise the class registered won't be linked °_°
 StreamString boh;
 
-
 extern void DebugErrorProcessFunction(const MARTe::ErrorManagement::ErrorInformation &errorInfo,
-                               const char * const errorDescription) ;
+                                      const char * const errorDescription);
 
 extern void PrintStack(ThreadIdentifier &tid);
 
 static void MARTeAppLauncher(void const *ignored) {
 
-
-	uint32 confSize = StringHelper::Length(config) + 1;
+    uint32 confSize = StringHelper::Length(config) + 1;
     ConfigurationDatabase cdb;
     StreamMemoryReference *stream = new StreamMemoryReference(config, confSize);
     stream->Seek(0);
@@ -74,11 +71,12 @@ static void MARTeAppLauncher(void const *ignored) {
     bool ok = parser.Parse();
     delete stream;
 
-
     ObjectRegistryDatabase *godb = NULL;
-    if(ok) {
+    if (ok) {
         godb = ObjectRegistryDatabase::Instance();
         godb->CleanUp();
+
+
         ok = godb->Initialise(cdb);
 
     }
@@ -90,9 +88,7 @@ static void MARTeAppLauncher(void const *ignored) {
 
     }
 
-
     if (ok) {
-
         ok = application->ConfigureApplication();
     }
 
@@ -105,26 +101,24 @@ static void MARTeAppLauncher(void const *ignored) {
     }
 }
 
-
 extern "C" {
 
-void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName ){
-	while(1){
-	//	REPORT_ERROR_PARAMETERS(ErrorManagement::FatalError, "Stack overflow in task %s", pcTaskName);
-	}
+void vApplicationStackOverflowHook(TaskHandle_t xTask,
+                                   char *pcTaskName) {
+    while (1) {
+        //	REPORT_ERROR_PARAMETERS(ErrorManagement::FatalError, "Stack overflow in task %s", pcTaskName);
+    }
 }
 
 void main(const void *arg) {
 
     SetErrorProcessFunction(&DebugErrorProcessFunction);
 
+    ThreadIdentifier tid = Threads::BeginThread(MARTeAppLauncher, NULL, configMINIMAL_STACK_SIZE * 16, "MARTeAppLauncher");
 
-	ThreadIdentifier tid=Threads::BeginThread(MARTeAppLauncher, NULL, configMINIMAL_STACK_SIZE * 16, "MARTeAppLauncher");
+    //Threads::BeginThread((ThreadFunctionType)PrintStack, &tid, configMINIMAL_STACK_SIZE*8);
 
-	//Threads::BeginThread((ThreadFunctionType)PrintStack, &tid, configMINIMAL_STACK_SIZE*8);
-
-
-    while(1){
+    while (1) {
         Sleep::Sec(1.0);
     }
 }

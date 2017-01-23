@@ -56,7 +56,8 @@ all: update_main \
 update_main:
 	grep -q UserMainFunction main.c || sed -i '1s/^/extern void UserMainFunction(const void *arg);\r\n /' main.c
 	sed -i '/int main(void)/,/while (1)/ s/StartDefaultTask/UserMainFunction/' main.c
-	grep -q 'osThreadDef' main.c || sed -i 's/osKernelStart();/osThreadDef(UserMainThread, UserMainFunction, osPriorityNormal, 0, configMINIMAL_STACK_SIZE); osThreadCreate(osThread(UserMainThread), NULL);&/' main.c
+	grep -q 'osThreadDef' main.c || sed -i 's/osKernelStart();/HAL_TIM_Base_Start((TIM_HandleTypeDef*) GetHwHandle("TIM6")); osThreadDef(UserMainThread, UserMainFunction, osPriorityNormal, 0, configMINIMAL_STACK_SIZE); osThreadCreate(osThread(UserMainThread), NULL);&/' main.c
+	grep -q 'CalibrateTimer' stm32f4xx_it.c || (sed -i 's/void NMI_Handler(void)/extern void CalibrateTimer();\n&/' stm32f4xx_it.c && sed -i 's/osSystickHandler();/&\nCalibrateTimer();/' stm32f4xx_it.c)
 	ls Addons.hdd && grep -q 'Addons' main.c || sed -i 's/int main(void)/#include "Addons.hdd"\n\r&/' main.c
 	if [ -f usbd_cdc_if.c ]; then cp usbd_cdc_if_template_c usbd_cdc_if.c; fi
 	if [ -f usbd_cdc_if.h ]; then cp usbd_cdc_if_template_h usbd_cdc_if.h; fi

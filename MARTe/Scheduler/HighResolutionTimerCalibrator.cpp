@@ -38,7 +38,12 @@
 /*---------------------------------------------------------------------------*/
 /*                           Static definitions                              */
 /*---------------------------------------------------------------------------*/
-
+extern "C"{
+void CalibrateTimer() {
+__TIMER__NAME__->CNT = 0;
+}
+extern void *GetHwHandle(const char*);
+}
 /*---------------------------------------------------------------------------*/
 /*                           Method definitions                              */
 /*---------------------------------------------------------------------------*/
@@ -47,8 +52,8 @@ namespace MARTe {
 HighResolutionTimerCalibrator calibratedHighResolutionTimer;
 
 HighResolutionTimerCalibrator::HighResolutionTimerCalibrator() {
-    frequency = osKernelSysTickFrequency;
-    period = 1.0 / osKernelSysTickFrequency;
+    frequency = osKernelSysTickFrequency*1000;
+    period = 1.0 / frequency;
 }
 
 bool HighResolutionTimerCalibrator::GetTimeStamp(TimeStamp &timeStamp) const {
@@ -75,7 +80,7 @@ uint64 HighResolutionTimerCalibrator::Counter() {
 }
 
 uint32 HighResolutionTimerCalibrator::Counter32() {
-    return HAL_GetTick() + __TIMER__NAME__->CNT;
+    return HAL_GetTick()*1000 + __TIMER__NAME__->CNT;
 }
 
 }
