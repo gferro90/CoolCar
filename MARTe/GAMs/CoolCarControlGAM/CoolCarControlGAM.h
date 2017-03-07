@@ -55,11 +55,23 @@ public:
     virtual bool Execute();
 
 private:
+    //signals
     uint16 *refs;
     uint32 *pwmMotor;
     uint32 *pwmDrive;
     uint32 *usb[3];
     uint32 *timer;
+    uint32 *stops;
+
+    //params
+    uint8 maxMotorIn;
+    uint8 minMotorIn;
+    uint8 maxDriveIn;
+    uint8 minDriveIn;
+    uint32 noObstacle;
+    uint32 obstacle;
+    uint8 *obstacleDetected;
+    uint32 numberOfStops;
 };
 
 /*---------------------------------------------------------------------------*/

@@ -358,6 +358,8 @@ bool SpiRadioModule::ReadPacket(char8 * buffer,
     //HAL_Delay(1);
 
     received = (status & 0x40);    // || (!(rxBuffer[1] & 0x1));
+  //  REPORT_ERROR_PARAMETERS(ErrorManagement::Warning, "status %x",status);
+
     if (received) {
         //read something
         txBuffer[0] = R_RX_PAYLOAD;
@@ -459,7 +461,7 @@ bool SpiRadioModule::WritePacket(const char8* buffer,
         SPI_TX_RX(txBuffer, rxBuffer, 2);
         CSN_H;
         transmitted = (rxBuffer[0] & 0x30);
-        //HAL_Delay(1);
+//        HAL_Delay(1);
 
     }
 

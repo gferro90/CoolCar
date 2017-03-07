@@ -143,7 +143,7 @@ bool TransmitterGAM::Initialise(StructuredDataI &data) {
     return ret;
 }
 
-void TransmitterGAM::Setup(){
+void TransmitterGAM::Setup() {
     //assign here the pointer to signals
     timer = (uint32*) GetInputSignalsMemory();
     adcMotor = (uint32 *) GetInputSignalsMemory() + 1;
@@ -166,18 +166,17 @@ bool TransmitterGAM::Execute() {
     *usb[1] = *adcMotor;
     *usb[2] = *adcDrive;
 
-    float32 factor = (*adcMotor- minMotorRef) / ((float32) rangeMotorRef);
+    float32 factor = (*adcMotor - minMotorRef) / ((float32) rangeMotorRef);
     float32 calc = minMotorIn + (factor * rangeMotorIn);
     *pwms = (uint16) calc;
     factor = (*adcDrive - minDriveRef) / ((float32) rangeDriveRef);
     calc = minDriveIn + (factor * rangeDriveIn);
     *usb[3] = *pwms;
 
-    *pwms<<=8;
+    *pwms <<= 8;
     *pwms |= (uint16) calc;
 
     *usb[4] = ((*pwms) & 0xff);
-
     //write on pwm (done by output broker)
     return true;
 }

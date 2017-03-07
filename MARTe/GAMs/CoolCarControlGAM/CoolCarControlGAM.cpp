@@ -51,24 +51,69 @@ CoolCarControlGAM::CoolCarControlGAM() {
     usb[1] = NULL;
     usb[2] = NULL;
     timer = NULL;
+    stops = NULL;
 
+    maxMotorIn = 0;
+    minMotorIn = 0;
+    maxDriveIn = 0;
+    minDriveIn = 0;
+    noObstacle = 0;
+    obstacle = 0;
+    obstacleDetected = NULL;
+    numberOfStops = 0;
 }
 
 CoolCarControlGAM::~CoolCarControlGAM() {
     // Auto-generated destructor stub for CoolCarControlGAM
     // TODO Verify if manual additions are needed
+    if (obstacleDetected != NULL) {
+        delete[] obstacleDetected;
+        obstacleDetected = NULL;
+    }
 }
 
 bool CoolCarControlGAM::Initialise(StructuredDataI &data) {
     bool ret = GAM::Initialise(data);
-    //todo custom initialisation
+
+    //custom initialisation
+    if (ret) {
+        if (!data.Read("MaxMotorIn", maxMotorIn)) {
+            maxMotorIn = 20;
+        }
+        if (!data.Read("MinMotorIn", minMotorIn)) {
+            minMotorIn = 10;
+        }
+        if (!data.Read("MaxDriveIn", maxDriveIn)) {
+            maxDriveIn = 17;
+        }
+        if (!data.Read("MinDriveIn", minDriveIn)) {
+            minDriveIn = 7;
+        }
+        if (!data.Read("ObstacleADC", obstacle)) {
+            obstacle = 2000;
+        }
+        if (!data.Read("NoObstacleADC", noObstacle)) {
+            noObstacle = 5;
+        }
+        if (!data.Read("NumberOfStops", numberOfStops)) {
+            numberOfStops = 2;
+        }
+        if (obstacleDetected != NULL) {
+            delete[] obstacleDetected;
+        }
+        obstacleDetected = new uint8[numberOfStops];
+        for (uint32 i = 0u; i < numberOfStops; i++) {
+            obstacleDetected = 0u;
+        }
+    }
     return ret;
 }
 
 void CoolCarControlGAM::Setup() {
     //assign here the pointer to signals
     timer = (uint32*) GetInputSignalsMemory();
-    refs = (uint16 *) GetInputSignalsMemory() + 2;
+    stops = (uint32 *) GetInputSignalsMemory() + 1;
+    refs = (uint16 *) stops + 2 * numberOfStops;
 
     usb[0] = (uint32*) GetOutputSignalsMemory();
     usb[1] = (uint32 *) GetOutputSignalsMemory() + 1;
@@ -78,16 +123,36 @@ void CoolCarControlGAM::Setup() {
 }
 
 bool CoolCarControlGAM::Execute() {
-    //read the ADC (done by input broker)
-    //map adc value on pwm duty cycle (to be done here)
-    //REPORT_ERROR_PARAMETERS(ErrorManagement::Warning, "Executing... %d %d", rangeMotorRef, rangeMotorIn);
 
     *usb[0] = *timer;
     *usb[1] = (uint32)((*refs) >> 8);
     *usb[2] = (uint32)((*refs) & 0xff);
 
-    *pwmMotor = *usb[1];
-    *pwmDrive = *usb[2];
+    bool isObstacle = false;
+
+    //histeresys
+    for (uint32 i = 0u; i < numberOfStops; i++) {
+        if ((stops[i] >= obstacle) && (obstacleDetected[i]==0u)) {
+            //exit if one obstacle has been detected
+            obstacleDetected[i] = 1u;
+            isObstacle = true;
+        }
+        if ((stops[i] < noObstacle) && (obstacleDetected[i]==1u)) {
+            obstacleDetected[i] = 0u;
+        }
+    }
+
+    if ((*usb[1] >= minMotorIn) && (*usb[1] <= maxMotorIn)) {
+        *pwmMotor = *usb[1];
+    }
+    if ((*usb[2] >= minDriveIn) && (*usb[2] <= maxDriveIn)) {
+        *pwmDrive = *usb[2];
+    }
+    // if one of the sensors has detected an obstacle stop the car
+    if (isObstacle) {
+        *pwmMotor = (maxMotorIn + minMotorIn) / 2;
+    }
+   // REPORT_ERROR_PARAMETERS(ErrorManagement::Warning, "Received %d %d", *usb[1], *usb[2]);
 
     //write on pwm (done by output broker)
     return true;
