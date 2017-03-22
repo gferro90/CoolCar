@@ -64,14 +64,15 @@ private:
     uint32 *stops;
 
     //params
-    uint8 maxMotorIn;
-    uint8 minMotorIn;
-    uint8 maxDriveIn;
-    uint8 minDriveIn;
+    uint32 maxMotorIn;
+    uint32 minMotorIn;
+    uint32 maxDriveIn;
+    uint32 minDriveIn;
     uint32 noObstacle;
     uint32 obstacle;
     uint8 *obstacleDetected;
     uint32 numberOfStops;
+    uint8 receiveOnlyRange;
 };
 
 /*---------------------------------------------------------------------------*/

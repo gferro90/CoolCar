@@ -68,6 +68,7 @@ private:
     uint32 rangeDriveRef;
     uint32 minDriveIn;
     uint32 rangeDriveIn;
+    uint8 transmitOnlyRange;
 };
 /*---------------------------------------------------------------------------*/
 /*                        Inline method definitions                          */

@@ -266,10 +266,10 @@ static void MX_TIM4_Init(void) {
 
     htim4.Instance = TIM4;
 //  htim4.Init.Prescaler = 8399;
-    htim4.Init.Prescaler = 719;
+    htim4.Init.Prescaler = 359;
 
     htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim4.Init.Period = 1999;
+    htim4.Init.Period = 3999;
     htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     if (HAL_TIM_Base_Init(&htim4) != HAL_OK) {
         Error_Handler();
@@ -298,7 +298,7 @@ static void MX_TIM4_Init(void) {
         Error_Handler();
     }
 
-    sConfigOC.Pulse = 120;
+    sConfigOC.Pulse = 1200;
     if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_2) != HAL_OK) {
         Error_Handler();
     }

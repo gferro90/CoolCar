@@ -62,7 +62,7 @@ TransmitterGAM::TransmitterGAM() {
     rangeDriveRef = 0u;
     minDriveIn = 0u;
     rangeDriveIn = 0u;
-
+    transmitOnlyRange=0u;
 }
 
 TransmitterGAM::~TransmitterGAM() {
@@ -137,6 +137,12 @@ bool TransmitterGAM::Initialise(StructuredDataI &data) {
         if (ret) {
             rangeDriveIn -= minDriveIn;
         }
+        if(ret){
+            if(!data.Read("TransmitOnlyRange", transmitOnlyRange)){
+                transmitOnlyRange=0u;
+            }
+
+        }
 
     }
 
@@ -168,9 +174,17 @@ bool TransmitterGAM::Execute() {
 
     float32 factor = (*adcMotor - minMotorRef) / ((float32) rangeMotorRef);
     float32 calc = minMotorIn + (factor * rangeMotorIn);
+
+    if (transmitOnlyRange) {
+        calc -= minMotorIn;
+    }
+
     *pwms = (uint16) calc;
     factor = (*adcDrive - minDriveRef) / ((float32) rangeDriveRef);
     calc = minDriveIn + (factor * rangeDriveIn);
+    if (transmitOnlyRange) {
+        calc -= minDriveIn;
+    }
     *usb[3] = *pwms;
 
     *pwms <<= 8;

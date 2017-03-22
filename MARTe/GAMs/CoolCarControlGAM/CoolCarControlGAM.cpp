@@ -61,6 +61,7 @@ CoolCarControlGAM::CoolCarControlGAM() {
     obstacle = 0;
     obstacleDetected = NULL;
     numberOfStops = 0;
+    receiveOnlyRange = 0u;
 }
 
 CoolCarControlGAM::~CoolCarControlGAM() {
@@ -98,6 +99,10 @@ bool CoolCarControlGAM::Initialise(StructuredDataI &data) {
         if (!data.Read("NumberOfStops", numberOfStops)) {
             numberOfStops = 2;
         }
+        if (!data.Read("ReceiveOnlyRange", receiveOnlyRange)) {
+            receiveOnlyRange = 0u;
+        }
+
         if (obstacleDetected != NULL) {
             delete[] obstacleDetected;
         }
@@ -128,31 +133,42 @@ bool CoolCarControlGAM::Execute() {
     *usb[1] = (uint32)((*refs) >> 8);
     *usb[2] = (uint32)((*refs) & 0xff);
 
+    if (receiveOnlyRange != 0u) {
+        if (*usb[1] != 0) {
+            *usb[1] += minMotorIn;
+        }
+        if (*usb[2] != 0) {
+            *usb[2] += minDriveIn;
+        }
+    }
+
     bool isObstacle = false;
 
     //histeresys
     for (uint32 i = 0u; i < numberOfStops; i++) {
-        if ((stops[i] >= obstacle) && (obstacleDetected[i]==0u)) {
+        if ((stops[i] >= obstacle) && (obstacleDetected[i] == 0u)) {
             //exit if one obstacle has been detected
             obstacleDetected[i] = 1u;
             isObstacle = true;
         }
-        if ((stops[i] < noObstacle) && (obstacleDetected[i]==1u)) {
+        if ((stops[i] < noObstacle) && (obstacleDetected[i] == 1u)) {
             obstacleDetected[i] = 0u;
         }
     }
 
     if ((*usb[1] >= minMotorIn) && (*usb[1] <= maxMotorIn)) {
         *pwmMotor = *usb[1];
+
     }
     if ((*usb[2] >= minDriveIn) && (*usb[2] <= maxDriveIn)) {
         *pwmDrive = *usb[2];
+
     }
     // if one of the sensors has detected an obstacle stop the car
     if (isObstacle) {
         *pwmMotor = (maxMotorIn + minMotorIn) / 2;
+
     }
-   // REPORT_ERROR_PARAMETERS(ErrorManagement::Warning, "Received %d %d", *usb[1], *usb[2]);
 
     //write on pwm (done by output broker)
     return true;
