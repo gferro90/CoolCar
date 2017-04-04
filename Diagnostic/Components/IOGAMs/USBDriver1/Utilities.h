@@ -1,8 +1,8 @@
 /**
- * @file CoolCarControlGAM.h
- * @brief Header file for class CoolCarControlGAM
- * @date 28/set/2016
- * @author Giuseppe Ferrò
+ * @file Utilities.h
+ * @brief Header file for class Utilities
+ * @date 29/mar/2017
+ * @author pc
  *
  * @copyright Copyright 2015 F4E | European Joint Undertaking for ITER and
  * the Development of Fusion Energy ('Fusion for Energy').
@@ -16,13 +16,13 @@
  * basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the Licence permissions and limitations under the Licence.
 
- * @details This header file contains the declaration of the class CoolCarControlGAM
+ * @details This header file contains the declaration of the class Utilities
  * with all of its public, protected and private members. It may also include
  * definitions for inline methods which need to be visible to the compiler.
  */
 
-#ifndef GAMS_COOLCARCONTROLGAM_H_
-#define GAMS_COOLCARCONTROLGAM_H_
+#ifndef UTILITIES_H_
+#define UTILITIES_H_
 
 /*---------------------------------------------------------------------------*/
 /*                        Standard header includes                           */
@@ -31,54 +31,56 @@
 /*---------------------------------------------------------------------------*/
 /*                        Project header includes                            */
 /*---------------------------------------------------------------------------*/
-
-#include "GAM.h"
-#include "ConfigurationDatabase.h"
-
+#include <cv.h>
+#include <highgui.h>
+#include <cxcore.h>
+#include <opencv2/core/core.hpp>
+//#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+#include <fcntl.h>
+#include <unistd.h>
+#include <termios.h>
+#include <string.h>
+#include<time.h>
+#include <sys/time.h>
 /*---------------------------------------------------------------------------*/
 /*                           Class declaration                               */
 /*---------------------------------------------------------------------------*/
 
-using namespace MARTe;
+inline float ABS_VAL(float a) {
+    return ((a) > 0) ? (a) : (-(a));
+}
 
-class CoolCarControlGAM: public GAM {
-public:
-    CLASS_REGISTER_DECLARATION()
+inline int SIGN_VAL(float a) {
+    return (a > 0) ? (1) : (-1);
+}
 
-    CoolCarControlGAM();
-    virtual ~CoolCarControlGAM();
+inline bool InRange(float input,
+                    float min,
+                    float max) {
+    return (input >= min) && (input <= max);
+}
 
-    virtual bool Initialise(StructuredDataI &data);
 
-    virtual void Setup();
-
-    virtual bool Execute();
-
-private:
-    //signals
-    uint16 *refs;
-    uint32 *encoder;
-    uint32 *pwmMotor;
-    uint32 *pwmDrive;
-    int32 *usb;
-    uint32 *timer;
-    uint32 *stops;
-
-    //params
-    uint32 maxMotorIn;
-    uint32 minMotorIn;
-    uint32 maxDriveIn;
-    uint32 minDriveIn;
-    uint32 noObstacle;
-    uint32 obstacle;
-    uint8 *obstacleDetected;
-    uint32 numberOfStops;
-    uint8 receiveOnlyRange;
+enum GenericStatus {
+    FOLLOW_RIGHT = 0, FOLLOW_LEFT
 };
 
+
+
+enum LineStatus {
+    STOP = 0, ZERO_LEFT, ZERO_RIGHT, LEFT_LINE, RIGHT_LINE, TWO_LINES
+};
+
+using namespace cv;
+using namespace std;
 /*---------------------------------------------------------------------------*/
 /*                        Inline method definitions                          */
 /*---------------------------------------------------------------------------*/
 
-#endif /* GAMS_COOLCARCONTROLGAM_H_ */
+#endif /* UTILITIES_H_ */
 

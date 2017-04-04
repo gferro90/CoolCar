@@ -1,8 +1,8 @@
 /**
- * @file CoolCarControlGAM.h
- * @brief Header file for class CoolCarControlGAM
- * @date 28/set/2016
- * @author Giuseppe Ferrò
+ * @file CamModule.h
+ * @brief Header file for class CamModule
+ * @date 29/mar/2017
+ * @author pc
  *
  * @copyright Copyright 2015 F4E | European Joint Undertaking for ITER and
  * the Development of Fusion Energy ('Fusion for Energy').
@@ -16,13 +16,13 @@
  * basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the Licence permissions and limitations under the Licence.
 
- * @details This header file contains the declaration of the class CoolCarControlGAM
+ * @details This header file contains the declaration of the class CamModule
  * with all of its public, protected and private members. It may also include
  * definitions for inline methods which need to be visible to the compiler.
  */
 
-#ifndef GAMS_COOLCARCONTROLGAM_H_
-#define GAMS_COOLCARCONTROLGAM_H_
+#ifndef CAMMODULE_H_
+#define CAMMODULE_H_
 
 /*---------------------------------------------------------------------------*/
 /*                        Standard header includes                           */
@@ -32,53 +32,33 @@
 /*                        Project header includes                            */
 /*---------------------------------------------------------------------------*/
 
-#include "GAM.h"
-#include "ConfigurationDatabase.h"
+#include "System.h"
+#include "GenericAcqModule.h"
+#include "File.h"
+#include "Utilities.h"
 
 /*---------------------------------------------------------------------------*/
 /*                           Class declaration                               */
 /*---------------------------------------------------------------------------*/
 
-using namespace MARTe;
-
-class CoolCarControlGAM: public GAM {
+class CamModule: public GCReferenceContainer {
 public:
-    CLASS_REGISTER_DECLARATION()
+    CamModule(){
 
-    CoolCarControlGAM();
-    virtual ~CoolCarControlGAM();
+    }
+    virtual ~CamModule(){
 
-    virtual bool Initialise(StructuredDataI &data);
+    }
+    virtual bool Init(Mat *, VideoCapture*,
+                      int showModeIn, char *bufferIn)=0;
 
-    virtual void Setup();
+    virtual bool Execute()=0;
 
-    virtual bool Execute();
-
-private:
-    //signals
-    uint16 *refs;
-    uint32 *encoder;
-    uint32 *pwmMotor;
-    uint32 *pwmDrive;
-    int32 *usb;
-    uint32 *timer;
-    uint32 *stops;
-
-    //params
-    uint32 maxMotorIn;
-    uint32 minMotorIn;
-    uint32 maxDriveIn;
-    uint32 minDriveIn;
-    uint32 noObstacle;
-    uint32 obstacle;
-    uint8 *obstacleDetected;
-    uint32 numberOfStops;
-    uint8 receiveOnlyRange;
 };
 
 /*---------------------------------------------------------------------------*/
 /*                        Inline method definitions                          */
 /*---------------------------------------------------------------------------*/
 
-#endif /* GAMS_COOLCARCONTROLGAM_H_ */
+#endif /* DIAGNOSTIC_COMPONENTS_IOGAMS_CAMERAUSBDRV_CAMMODULE_H_ */
 

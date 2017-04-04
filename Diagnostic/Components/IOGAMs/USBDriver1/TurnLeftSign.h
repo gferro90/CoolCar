@@ -1,8 +1,8 @@
 /**
- * @file CoolCarControlGAM.h
- * @brief Header file for class CoolCarControlGAM
- * @date 28/set/2016
- * @author Giuseppe Ferrò
+ * @file TurnLeftSign.h
+ * @brief Header file for class TurnLeftSign
+ * @date 29/mar/2017
+ * @author pc
  *
  * @copyright Copyright 2015 F4E | European Joint Undertaking for ITER and
  * the Development of Fusion Energy ('Fusion for Energy').
@@ -16,13 +16,13 @@
  * basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the Licence permissions and limitations under the Licence.
 
- * @details This header file contains the declaration of the class CoolCarControlGAM
+ * @details This header file contains the declaration of the class TurnLeftSign
  * with all of its public, protected and private members. It may also include
  * definitions for inline methods which need to be visible to the compiler.
  */
 
-#ifndef GAMS_COOLCARCONTROLGAM_H_
-#define GAMS_COOLCARCONTROLGAM_H_
+#ifndef TURNLEFTSIGN_H_
+#define TURNLEFTSIGN_H_
 
 /*---------------------------------------------------------------------------*/
 /*                        Standard header includes                           */
@@ -31,54 +31,26 @@
 /*---------------------------------------------------------------------------*/
 /*                        Project header includes                            */
 /*---------------------------------------------------------------------------*/
-
-#include "GAM.h"
-#include "ConfigurationDatabase.h"
-
+#include "RoadSign.h"
 /*---------------------------------------------------------------------------*/
 /*                           Class declaration                               */
 /*---------------------------------------------------------------------------*/
+OBJECT_DLL (TurnLeftSign)
 
-using namespace MARTe;
+class TurnLeftSign: public RoadSign {
 
-class CoolCarControlGAM: public GAM {
+    OBJECT_DLL_STUFF (TurnLeftSign)
+
 public:
-    CLASS_REGISTER_DECLARATION()
+    TurnLeftSign();
+    virtual ~TurnLeftSign();
+    virtual float SignalFunction(int & status);
 
-    CoolCarControlGAM();
-    virtual ~CoolCarControlGAM();
-
-    virtual bool Initialise(StructuredDataI &data);
-
-    virtual void Setup();
-
-    virtual bool Execute();
-
-private:
-    //signals
-    uint16 *refs;
-    uint32 *encoder;
-    uint32 *pwmMotor;
-    uint32 *pwmDrive;
-    int32 *usb;
-    uint32 *timer;
-    uint32 *stops;
-
-    //params
-    uint32 maxMotorIn;
-    uint32 minMotorIn;
-    uint32 maxDriveIn;
-    uint32 minDriveIn;
-    uint32 noObstacle;
-    uint32 obstacle;
-    uint8 *obstacleDetected;
-    uint32 numberOfStops;
-    uint8 receiveOnlyRange;
 };
 
 /*---------------------------------------------------------------------------*/
 /*                        Inline method definitions                          */
 /*---------------------------------------------------------------------------*/
 
-#endif /* GAMS_COOLCARCONTROLGAM_H_ */
+#endif /* TURNLEFTSIGN_H_ */
 

@@ -35,7 +35,7 @@
 /*---------------------------------------------------------------------------*/
 /*                           Static definitions                              */
 /*---------------------------------------------------------------------------*/
-
+extern uint32 sentPacketNumber;
 /*---------------------------------------------------------------------------*/
 /*                           Method definitions                              */
 /*---------------------------------------------------------------------------*/
@@ -47,11 +47,10 @@ CoolCarControlGAM::CoolCarControlGAM() {
     pwmMotor = NULL;
     pwmDrive = NULL;
     refs = NULL;
-    usb[0] = NULL;
-    usb[1] = NULL;
-    usb[2] = NULL;
+    usb = NULL;
     timer = NULL;
     stops = NULL;
+    encoder =NULL;
 
     maxMotorIn = 0;
     minMotorIn = 0;
@@ -119,26 +118,32 @@ void CoolCarControlGAM::Setup() {
     timer = (uint32*) GetInputSignalsMemory();
     stops = (uint32 *) GetInputSignalsMemory() + 1;
     refs = (uint16 *) stops + 2 * numberOfStops;
+    encoder = (uint32*) (refs +1);
 
-    usb[0] = (uint32*) GetOutputSignalsMemory();
-    usb[1] = (uint32 *) GetOutputSignalsMemory() + 1;
-    usb[2] = (uint32 *) GetOutputSignalsMemory() + 2;
-    pwmMotor = (uint32 *) GetOutputSignalsMemory() + 3;
-    pwmDrive = (uint32 *) GetOutputSignalsMemory() + 4;
+    pwmMotor = (uint32 *) GetOutputSignalsMemory();
+    pwmDrive = (uint32 *) GetOutputSignalsMemory() + 1;
+    usb = (int32*) GetOutputSignalsMemory() + 2;
 }
 
 bool CoolCarControlGAM::Execute() {
 
-    *usb[0] = *timer;
-    *usb[1] = (uint32)((*refs) >> 8);
-    *usb[2] = (uint32)((*refs) & 0xff);
+    uint32 motorRec = (uint32)((*refs) >> 8);
+    uint32 driveRec = (uint32)((*refs) & 0xff);
+
+    //REPORT_ERROR_PARAMETERS(ErrorManagement::Warning,"\nExecuting %d %d\n", motorRec, driveRec);
+    usb[0]=sentPacketNumber;
+    sentPacketNumber++;
+    usb[1] = *timer;
+    usb[2] = motorRec;
+    usb[3] = driveRec;
+    usb[4]= *encoder;
 
     if (receiveOnlyRange != 0u) {
-        if (*usb[1] != 0) {
-            *usb[1] += minMotorIn;
+        if (motorRec != 0) {
+            motorRec += minMotorIn;
         }
-        if (*usb[2] != 0) {
-            *usb[2] += minDriveIn;
+        if (driveRec != 0) {
+            driveRec += minDriveIn;
         }
     }
 
@@ -156,12 +161,12 @@ bool CoolCarControlGAM::Execute() {
         }
     }
 
-    if ((*usb[1] >= minMotorIn) && (*usb[1] <= maxMotorIn)) {
-        *pwmMotor = *usb[1];
+    if ((motorRec >= minMotorIn) && (motorRec <= maxMotorIn)) {
+        *pwmMotor = motorRec;
 
     }
-    if ((*usb[2] >= minDriveIn) && (*usb[2] <= maxDriveIn)) {
-        *pwmDrive = *usb[2];
+    if ((driveRec >= minDriveIn) && (driveRec <= maxDriveIn)) {
+        *pwmDrive = driveRec;
 
     }
     // if one of the sensors has detected an obstacle stop the car
@@ -169,6 +174,7 @@ bool CoolCarControlGAM::Execute() {
         *pwmMotor = (maxMotorIn + minMotorIn) / 2;
 
     }
+
 
     //write on pwm (done by output broker)
     return true;

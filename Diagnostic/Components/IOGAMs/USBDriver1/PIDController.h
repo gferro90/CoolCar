@@ -1,8 +1,8 @@
 /**
- * @file CoolCarControlGAM.h
- * @brief Header file for class CoolCarControlGAM
- * @date 28/set/2016
- * @author Giuseppe Ferrò
+ * @file PIDController.h
+ * @brief Header file for class PIDController
+ * @date 23/feb/2017
+ * @author pc
  *
  * @copyright Copyright 2015 F4E | European Joint Undertaking for ITER and
  * the Development of Fusion Energy ('Fusion for Energy').
@@ -16,13 +16,13 @@
  * basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the Licence permissions and limitations under the Licence.
 
- * @details This header file contains the declaration of the class CoolCarControlGAM
+ * @details This header file contains the declaration of the class PIDController
  * with all of its public, protected and private members. It may also include
  * definitions for inline methods which need to be visible to the compiler.
  */
 
-#ifndef GAMS_COOLCARCONTROLGAM_H_
-#define GAMS_COOLCARCONTROLGAM_H_
+#ifndef PIDCONTROLLER_H_
+#define PIDCONTROLLER_H_
 
 /*---------------------------------------------------------------------------*/
 /*                        Standard header includes                           */
@@ -32,53 +32,38 @@
 /*                        Project header includes                            */
 /*---------------------------------------------------------------------------*/
 
-#include "GAM.h"
-#include "ConfigurationDatabase.h"
-
+#include "System.h"
+#include "GenericAcqModule.h"
+#include "File.h"
+#include "Controller.h"
 /*---------------------------------------------------------------------------*/
 /*                           Class declaration                               */
 /*---------------------------------------------------------------------------*/
+OBJECT_DLL (PIDController)
 
-using namespace MARTe;
+class PIDController: public Controller {
+    OBJECT_DLL_STUFF (PIDController)
 
-class CoolCarControlGAM: public GAM {
 public:
-    CLASS_REGISTER_DECLARATION()
+    PIDController();
 
-    CoolCarControlGAM();
-    virtual ~CoolCarControlGAM();
+    virtual ~PIDController();
 
-    virtual bool Initialise(StructuredDataI &data);
+    virtual bool ObjectLoadSetup(ConfigurationDataBase &cdbData,
+                                 StreamInterface * err);
 
-    virtual void Setup();
-
-    virtual bool Execute();
-
+    virtual float Execute(float error, float dt=0.);
 private:
-    //signals
-    uint16 *refs;
-    uint32 *encoder;
-    uint32 *pwmMotor;
-    uint32 *pwmDrive;
-    int32 *usb;
-    uint32 *timer;
-    uint32 *stops;
-
-    //params
-    uint32 maxMotorIn;
-    uint32 minMotorIn;
-    uint32 maxDriveIn;
-    uint32 minDriveIn;
-    uint32 noObstacle;
-    uint32 obstacle;
-    uint8 *obstacleDetected;
-    uint32 numberOfStops;
-    uint8 receiveOnlyRange;
+    float Kp;
+    float Ki;
+    float Kd;
+    float integralTerm;
+    float error_1;
 };
 
 /*---------------------------------------------------------------------------*/
 /*                        Inline method definitions                          */
 /*---------------------------------------------------------------------------*/
 
-#endif /* GAMS_COOLCARCONTROLGAM_H_ */
+#endif /* PIDCONTROLLER_H_ */
 

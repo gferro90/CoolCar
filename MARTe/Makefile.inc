@@ -34,7 +34,8 @@ SPB = ../ToolConfiguration.x GAMs/CoolCarControlGAM.x GAMs/Transmitter.x  Schedu
 	$(MARTE2_TOOLS)/DataSources/PWM.x \
 	$(MARTE2_TOOLS)/DataSources/Timer.x \
 	$(MARTE2_TOOLS)/DataSources/USBSignalDisplay.x \
-	$(MARTE2_TOOLS)/DataSources/USBCommunication.x
+	$(MARTE2_TOOLS)/DataSources/USBCommunication.x \
+	$(MARTE2_TOOLS)/DataSources/Encoder_opt.x \
 	
 
 MAKEDEFAULTDIR=$(MARTE2_DIR)/MakeDefaults
@@ -84,6 +85,8 @@ LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/ADC_DMADataSource.a
 LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/PWMDataSource.a
 LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/USBSignalDisplay.a
 LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/USBCommunication.a
+LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/Encoder_optDataSource.a
+
 
 # Static MARTe libraries
 LIBRARIES_STATIC += $(MARTE2_DIR)/Build/$(TARGET)/Core/BareMetal/MARTeCoreB.a
