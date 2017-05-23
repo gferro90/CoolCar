@@ -22,12 +22,16 @@
 # $Id: Makefile.inc 3 2012-01-15 16:26:07Z aneto $
 #
 #############################################################
+
 OBJSX=	CameraUSBDrv.x\
 	LineFollower.x\
 	PIDController.x\
 	RoadSign.x\
 	TurnLeftSign.x\
-	TurnRightSign.x
+	TurnRightSign.x\
+	CoolCarDiagnostic.x\
+	base64.x
+	
 
  
 #CameraUSBDrv.x\

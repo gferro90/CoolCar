@@ -316,3 +316,28 @@ Once everything has been installed we can run an example in 'OpenNI/ Platform/ L
 \begin{verbatim}
 sudo xauth merge /home/pi/.Xauthority
 \end{verbatim}
+
+\section{Phase 4 (Line Follower Application)}
+In this section we are going to implement a line follower application for our cool car. The idea is to use a raspberry-pi in order to acquire a stream video from a camera and recognize black lines. A simple controller manages the direction of the car due to keep the car in a specific position with respect the line on the ground. \\
+We choose the following requirements for this application:
+\begin{itemize}
+\item The car normally should stay between two black (or white) lines on the ground.
+\item It should be possible recognize coloured road signals in order to do something depending on our choice. The default implementation recognizes two colours: green and orange. If green has been detected, the car will follows right line if there are crosses on the path (also default behaviour), otherwise if orange has been detected the car will follow the left line.
+\end{itemize}
+Let's explain some of the implementation. On raspberry-pi 2 opencv-3.0.0 has been installed due to manage the video streaming and to use the library functions to recognize the lines and the road signals. Opencv has been used inside a MARTe1 IOGAM, in this way it's easy employ the graphical HTTP interface on the browser (accessible also remotely) using the classic GAMs like WebStatisticsGAM, PlottingGAM and CollectionGAM in order to visualize diagnostics.\\
+The following classes have been developed for this application:
+\begin{itemize}
+\item CameraUSBDrv: inherits from USBDrv which basically opens a USB port in order to get the signals to be visualized. This IOGAM opens the video streaming using opencv functions and loads all the CamModule objects declared in the cfg. After the initialization of the modules, the execution will retrieve the signals from usb port and will launch the execution of the modules passing them the video stream, the received buffer and the buffer to be filled and sent. After the execution of all the modules, the filled buffer will be sent truth USB port. Follows a brief description of the configuration parameters.
+\begin{itemize}
+\item NumberOfInputs  = 7: how many inputs signals (4 bytes size) have to be received from USB
+\item NumberOfOutputs = 0: how many outputs signals (always zero)
+\item BaudRate = 115200: USB baud rate
+\item USBFileLocation = "/dev/ttyACM0": the USB serial port
+\item StmCFG = "MARTe-Stm-BareMetal2.cfg": the configuration file to be loaded on the STM. Right now it is not used yet.
+\item OutpurBufferSize = 2: the size (in bytes) of the buffer to be sent truth USB again to STM.
+\item CameraID = 0: the camera device id number.
+\item CalibrateCycles = 60: how many cycles get before initialise sub-modules
+\item SleepAfterInit = 5000: how many time (millis) sleep between initializion and execution.
+\item ShowMode = 0: 0-to show nothing, 1-to show the line band during initialization only, 2-to show the line band during all the execution, 3-to show all the figures during all the execution.
+\end{itemize}
+\end{itemize}

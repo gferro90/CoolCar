@@ -31,10 +31,14 @@
 
 #include "CoolCarControlGAM.h"
 #include "AdvancedErrorManagement.h"
-
+#include "HighResolutionTimer.h"
+#include "stdio.h"
+#include "string.h"
 /*---------------------------------------------------------------------------*/
 /*                           Static definitions                              */
 /*---------------------------------------------------------------------------*/
+#define AdjustCounterDirection(encoder, dir)  (uint32)((uint16) ((dir==-1)*0x10000+dir*encoder))
+
 extern uint32 sentPacketNumber;
 /*---------------------------------------------------------------------------*/
 /*                           Method definitions                              */
@@ -61,6 +65,8 @@ CoolCarControlGAM::CoolCarControlGAM() {
     obstacleDetected = NULL;
     numberOfStops = 0;
     receiveOnlyRange = 0u;
+    encoderStore=0u;
+    counterDirection=1;
 }
 
 CoolCarControlGAM::~CoolCarControlGAM() {
@@ -101,6 +107,10 @@ bool CoolCarControlGAM::Initialise(StructuredDataI &data) {
         if (!data.Read("ReceiveOnlyRange", receiveOnlyRange)) {
             receiveOnlyRange = 0u;
         }
+        if (!data.Read("CounterDirection", counterDirection)) {
+            counterDirection = 1u;
+        }
+
 
         if (obstacleDetected != NULL) {
             delete[] obstacleDetected;
@@ -123,6 +133,7 @@ void CoolCarControlGAM::Setup() {
     pwmMotor = (uint32 *) GetOutputSignalsMemory();
     pwmDrive = (uint32 *) GetOutputSignalsMemory() + 1;
     usb = (int32*) GetOutputSignalsMemory() + 2;
+    tic=HighResolutionTimer::Counter();
 }
 
 bool CoolCarControlGAM::Execute() {
@@ -130,13 +141,32 @@ bool CoolCarControlGAM::Execute() {
     uint32 motorRec = (uint32)((*refs) >> 8);
     uint32 driveRec = (uint32)((*refs) & 0xff);
 
-    //REPORT_ERROR_PARAMETERS(ErrorManagement::Warning,"\nExecuting %d %d\n", motorRec, driveRec);
+    float dt=(HighResolutionTimer::Counter()-tic)*1.0e-6;
+    tic=HighResolutionTimer::Counter();
+
+
+    //REPORT_ERROR_PARAMETERS(ErrorManagement::Warning,"\nExecuting %f %d\n", dt, tic);
     usb[0]=sentPacketNumber;
     sentPacketNumber++;
     usb[1] = *timer;
     usb[2] = motorRec;
     usb[3] = driveRec;
+    uint32 storeEncoder = *encoder;
+
+    //encoder position and speed
+    //do the difference with the previous
+    *encoder=AdjustCounterDirection(*encoder, counterDirection);
+    *encoder=(uint32)(encoderStore+(int16)((*encoder)-encoderStore));
     usb[4]= *encoder;
+
+    float speed=0.;
+    if(dt!=0.){
+        speed=((int32)(*encoder-encoderStore))/dt;
+    }
+    memcpy(&usb[5], &speed, sizeof(float));
+    //usb[5]= speed;
+    encoderStore=*encoder;
+    *encoder=storeEncoder;
 
     if (receiveOnlyRange != 0u) {
         if (motorRec != 0) {

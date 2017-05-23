@@ -36,12 +36,15 @@
 #include "GenericAcqModule.h"
 #include "File.h"
 #include "Utilities.h"
+#include "HttpStream.h"
+#include "HttpInterface.h"
+#include "HtmlStream.h"
 
 /*---------------------------------------------------------------------------*/
 /*                           Class declaration                               */
 /*---------------------------------------------------------------------------*/
 
-class CamModule: public GCReferenceContainer {
+class CamModule: public GCReferenceContainer, public HttpInterface {
 public:
     CamModule(){
 
@@ -50,7 +53,7 @@ public:
 
     }
     virtual bool Init(Mat *, VideoCapture*,
-                      int showModeIn, char *bufferIn)=0;
+                      int showModeIn, char *bufferIn, char* bufferOut)=0;
 
     virtual bool Execute()=0;
 

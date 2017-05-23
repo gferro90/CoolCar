@@ -45,7 +45,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <string.h>
-#include<time.h>
+#include <time.h>
 #include <sys/time.h>
 /*---------------------------------------------------------------------------*/
 /*                           Class declaration                               */

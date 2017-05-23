@@ -101,6 +101,7 @@ bool CameraUSBDrv::ObjectLoadSetup(ConfigurationDataBase &cdbData,
         if (ret) {
             printf("\nallocated %d for dataWriteBuffer\n", outputBufferSize);
             dataWriteBuffer = new char[outputBufferSize];
+            memset(dataWriteBuffer, 0, outputBufferSize);
         }
         else {
             AssertErrorCondition(InitialisationError, "CameraUSBDrv::ObjectLoadSetup: %s CameraID not specified. Using default: %d", Name(), cameraId);
@@ -108,6 +109,7 @@ bool CameraUSBDrv::ObjectLoadSetup(ConfigurationDataBase &cdbData,
 
     }
 
+    int32 sleepAfterInit=0;
     //Initialisation
     if (ret) {
         if (!cdb.ReadInt32(cameraId, "CameraID", 0)) {
@@ -125,7 +127,9 @@ bool CameraUSBDrv::ObjectLoadSetup(ConfigurationDataBase &cdbData,
         if (!cdb.ReadInt32(showMode, "ShowMode", 0)) {
             AssertErrorCondition(Warning, "CameraUSBDrv::ObjectLoadSetup: %s showMode not specified. Using default: %d", Name(), showMode);
         }
-
+        if (!cdb.ReadInt32(sleepAfterInit, "SleepAfterInit", 0)) {
+            AssertErrorCondition(Warning, "CameraUSBDrv::ObjectLoadSetup: %s showMode not specified. Using default: %d", Name(), showMode);
+        }
     }
 
     // camera intialisation
@@ -168,12 +172,22 @@ bool CameraUSBDrv::ObjectLoadSetup(ConfigurationDataBase &cdbData,
             GCRTemplate<CamModule> ref = Find(i);
             if (ref.IsValid()) {
                 modules[n] = ref;
-                if(!modules[n]->Init(frameMat, capture, showMode, dataWriteBuffer)){
+                if(!modules[n]->Init(frameMat, capture, showMode, (char*)dataBuffer, dataWriteBuffer)){
                     AssertErrorCondition(Warning, "CameraUSBDrv::Failed initialisation of %s", modules[n]->Name());
                 }
                 n++;
             }
         }
+        uint32 defaultSize = ((numberOfInputChannels - 1) * sizeof(uint32));
+        *dataBuffer = cycleCounter;
+        while(read(usbFile, dataBuffer + 1, defaultSize)>0){
+
+        }
+        if (write(usbFile, dataWriteBuffer, outputBufferSize) < 0) {
+            AssertErrorCondition(Warning, "CameraUSBDrv::USB write error");
+        }
+        SleepMsec(sleepAfterInit);
+
     }
     return ret;
 }

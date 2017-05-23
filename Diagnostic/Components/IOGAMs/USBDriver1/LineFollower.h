@@ -63,20 +63,23 @@ public:
     virtual bool ObjectLoadSetup(ConfigurationDataBase &cdbData,
                                  StreamInterface * err);
 
-    virtual bool Init(Mat *, VideoCapture*,
-                      int showModeIn, char *bufferIn);
+    virtual bool Init(Mat *,
+                      VideoCapture*,
+                      int showModeIn,
+                      char *bufferIn,
+                      char* bufferOut);
 
     virtual bool Execute();
 
-
+    virtual bool ProcessHttpMessage(HttpStream &hStream);
     //public attributes
-
 
     GenericStatus status;
     LineStatus lineStatus;
 private:
 
-    int FollowLine(Mat &lineBandGreyThres, int& speedControl);
+    int FollowLine(Mat &lineBandGreyThres,
+                   int& speedControl);
 
     int DetectSignal(Mat &hsv_frame,
                      Mat &thresholded);
@@ -128,14 +131,11 @@ private:
     int32 speedPwmMin;
     int32 speedPwmMax;
 
-
-
     int zeroLineCycles;
     int signalMinWidth;
 
     float curvatureThres;
     int bufferStart;
-
 
     //status parameters
     int minX_1;
@@ -146,7 +146,6 @@ private:
 
     int refLeft;
     int refRight;
-
 
     int numberCyclesInStatus;
 
@@ -172,8 +171,8 @@ private:
     Mat *lineBandGrey;
     Mat *lineBandGreyThres;
 
-    //buffer
-    char* buffer;
+    //outputBuffer
+    char* outputBuffer;
 
 };
 

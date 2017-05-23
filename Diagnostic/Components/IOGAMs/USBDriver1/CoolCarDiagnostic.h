@@ -1,8 +1,8 @@
 /**
- * @file CoolCarControlGAM.h
- * @brief Header file for class CoolCarControlGAM
- * @date 28/set/2016
- * @author Giuseppe Ferrò
+ * @file CoolCarDiagnostic.h
+ * @brief Header file for class CoolCarDiagnostic
+ * @date 28/mar/2017
+ * @author pc
  *
  * @copyright Copyright 2015 F4E | European Joint Undertaking for ITER and
  * the Development of Fusion Energy ('Fusion for Energy').
@@ -16,13 +16,13 @@
  * basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the Licence permissions and limitations under the Licence.
 
- * @details This header file contains the declaration of the class CoolCarControlGAM
+ * @details This header file contains the declaration of the class CoolCarDiagnostic
  * with all of its public, protected and private members. It may also include
  * definitions for inline methods which need to be visible to the compiler.
  */
 
-#ifndef GAMS_COOLCARCONTROLGAM_H_
-#define GAMS_COOLCARCONTROLGAM_H_
+#ifndef COOLCARDIAGNOSTIC_H_
+#define COOLCARDIAGNOSTIC_H_
 
 /*---------------------------------------------------------------------------*/
 /*                        Standard header includes                           */
@@ -31,60 +31,91 @@
 /*---------------------------------------------------------------------------*/
 /*                        Project header includes                            */
 /*---------------------------------------------------------------------------*/
+#define int64 int64_t
+#define uint64 uint64_t
+#include "Utilities.h"
+#undef int64
+#undef uint64
+#include "System.h"
+#include "GenericAcqModule.h"
+#include "File.h"
+#include "CamModule.h"
 
-#include "GAM.h"
-#include "ConfigurationDatabase.h"
+//TODO Opencv stuff
 
 /*---------------------------------------------------------------------------*/
 /*                           Class declaration                               */
 /*---------------------------------------------------------------------------*/
 
-using namespace MARTe;
+OBJECT_DLL (CoolCarDiagnostic)
 
-class CoolCarControlGAM: public GAM {
+class CoolCarDiagnostic: public CamModule {
+
+    OBJECT_DLL_STUFF (CoolCarDiagnostic)
+
 public:
-    CLASS_REGISTER_DECLARATION()
+    CoolCarDiagnostic();
 
-    CoolCarControlGAM();
-    virtual ~CoolCarControlGAM();
+    virtual ~CoolCarDiagnostic();
 
-    virtual bool Initialise(StructuredDataI &data);
+    virtual bool ObjectLoadSetup(ConfigurationDataBase &cdbData,
+                                 StreamInterface * err);
 
-    virtual void Setup();
+    virtual bool Init(Mat *,
+                      VideoCapture*,
+                      int showModeIn,
+                      char *bufferIn,
+                      char *bufferOut);
 
     virtual bool Execute();
 
+    virtual bool ProcessHttpMessage(HttpStream &hStream);
+
+
 private:
-    //signals
-    uint16 *refs;
-    uint32 *encoder;
-    uint32 *pwmMotor;
-    uint32 *pwmDrive;
-    int32 *usb;
-    uint32 *timer;
-    uint32 *stops;
 
-    //params
-    uint32 maxMotorIn;
-    uint32 minMotorIn;
-    uint32 maxDriveIn;
-    uint32 minDriveIn;
-    uint32 noObstacle;
-    uint32 obstacle;
-    uint8 *obstacleDetected;
-    uint32 numberOfStops;
-    uint8 receiveOnlyRange;
-    int8 counterDirection;
+    VideoCapture *capture;
 
-    //internal vars
-    uint32 encoderStore;
-    uint32 tic;
+    //config params
+    int32 positionIndex;
+    int32 directionIndex;
 
+
+    float positionFactor;
+    float directionFactor;
+    float positionMinIn;
+    float positionMinOut;
+    float directionMinIn;
+    float directionMinOut;
+
+    float chassisLength;
+    float initialXposition;
+    float initialYposition;
+    float initialOrientation;
+    int32 httpRefreshTime;
+
+    //state
+    Mat *frameMat;
+    //outputBuffer
+    char* outputBuffer;
+    char* inputBuffer;
+
+    float x;
+    float y;
+    float theta;
+    float speed;
+    float omega;
+
+
+    int32 *position;
+    float pos_1;
+    int32 *direction;
+    uint64 lastUpdateTime;
 };
 
 /*---------------------------------------------------------------------------*/
 /*                        Inline method definitions                          */
 /*---------------------------------------------------------------------------*/
 
-#endif /* GAMS_COOLCARCONTROLGAM_H_ */
+#endif /* DIAGNOSTIC_COMPONENTS_IOGAMS_CAMERAUSBDRV_COOLCARDIAGNOSTIC_H_ */
 

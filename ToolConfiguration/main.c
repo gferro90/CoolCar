@@ -131,8 +131,6 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, UserMainFunction, osPriorityNormal, 0, 128);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -144,7 +142,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
  
 
   /* Start scheduler */
-  osKernelStart();
+  HAL_TIM_Base_Start((TIM_HandleTypeDef*) GetHwHandle("TIM6")); osThreadDef(UserMainThread, UserMainFunction, osPriorityNormal, 0, configMINIMAL_STACK_SIZE); osThreadCreate(osThread(UserMainThread), NULL);osKernelStart();
   
   /* We should never get here as control is now taken by the scheduler */
 
@@ -422,7 +420,7 @@ static void MX_TIM6_Init(void)
   TIM_MasterConfigTypeDef sMasterConfig;
 
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 83;
+  htim6.Init.Prescaler = 71;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim6.Init.Period = 999;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)

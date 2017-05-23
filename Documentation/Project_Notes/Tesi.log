@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2014.11.10)  3 NOV 2016 10:59
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2014.11.10)  14 APR 2017 01:07
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -433,28 +433,29 @@ Overfull \hbox (3.31796pt too wide) in paragraph at lines 314--314
 t and set:[] 
  []
 
-[10]) [11] (./Tesi.aux (./capitolo0.aux)) ) 
+[10] [11]) [12] (./Tesi.aux (./capitolo0.aux)) ) 
 Here is how much of TeX's memory you used:
  6156 strings out of 493304
  80077 string characters out of 6139870
- 249071 words of memory out of 5000000
+ 250071 words of memory out of 5000000
  9471 multiletter control sequences out of 15000+600000
  17624 words of font info for 48 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
  38i,11n,56p,793b,1143s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texmf/fonts/enc/dvips/cm
--super/cm-super-t1.enc}</usr/share/texlive/texmf-dist/fonts/type1/public/amsfon
-ts/cm/cmsy10.pfb></usr/share/texmf/fonts/type1/public/cm-super/sfbx1200.pfb></u
-sr/share/texmf/fonts/type1/public/cm-super/sfbx1440.pfb></usr/share/texmf/fonts
-/type1/public/cm-super/sfbx1728.pfb></usr/share/texmf/fonts/type1/public/cm-sup
-er/sfbx2488.pfb></usr/share/texmf/fonts/type1/public/cm-super/sfrm1095.pfb></us
-r/share/texmf/fonts/type1/public/cm-super/sfrm1200.pfb></usr/share/texmf/fonts/
-type1/public/cm-super/sfti1095.pfb></usr/share/texmf/fonts/type1/public/cm-supe
-r/sftt1000.pfb></usr/share/texmf/fonts/type1/public/cm-super/sftt1200.pfb>
-Output written on Tesi.pdf (12 pages, 196577 bytes).
+{/usr/share/texmf/fonts/enc/dvi
+ps/cm-super/cm-super-t1.enc}</usr/share/texlive/texmf-dist/fonts/type1/public/a
+msfonts/cm/cmsy10.pfb></usr/share/texmf/fonts/type1/public/cm-super/sfbx1200.pf
+b></usr/share/texmf/fonts/type1/public/cm-super/sfbx1440.pfb></usr/share/texmf/
+fonts/type1/public/cm-super/sfbx1728.pfb></usr/share/texmf/fonts/type1/public/c
+m-super/sfbx2488.pfb></usr/share/texmf/fonts/type1/public/cm-super/sfrm1095.pfb
+></usr/share/texmf/fonts/type1/public/cm-super/sfrm1200.pfb></usr/share/texmf/f
+onts/type1/public/cm-super/sfti1095.pfb></usr/share/texmf/fonts/type1/public/cm
+-super/sftt1000.pfb></usr/share/texmf/fonts/type1/public/cm-super/sftt1200.pfb>
+
+Output written on Tesi.pdf (13 pages, 205661 bytes).
 PDF statistics:
- 84 PDF objects out of 1000 (max. 8388607)
- 59 compressed objects within 1 object stream
+ 88 PDF objects out of 1000 (max. 8388607)
+ 62 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

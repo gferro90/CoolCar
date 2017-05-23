@@ -362,7 +362,7 @@ bool LineFollower::Calibrate(Mat &lineBandGreyThres) {
 
     minX_1 = minX;
     maxX_1 = maxX;
-    printf("\nlinesCounter=%d\n",linesCounter);
+    printf("\nlinesCounter=%d\n", linesCounter);
     if ((linesCounter >= 2) && (lineWidth > 0)) {
         return true;
     }
@@ -583,8 +583,8 @@ LineFollower::LineFollower() {
     lineBandGrey = NULL;
     lineBandGreyThres = NULL;
 
-    //buffer
-    buffer = NULL;
+    //outputBuffer
+    outputBuffer = NULL;
 
     signals = NULL;
 }
@@ -626,7 +626,7 @@ LineFollower::~LineFollower() {
 bool LineFollower::ObjectLoadSetup(ConfigurationDataBase &cdbData,
                                    StreamInterface * err) {
 
-    bool ret = CamModule::ObjectLoadSetup(cdbData, err);
+    bool ret = GCReferenceContainer::ObjectLoadSetup(cdbData, err);
 
     CDBExtended cdb(cdbData);
     if (ret) {
@@ -654,7 +654,6 @@ bool LineFollower::ObjectLoadSetup(ConfigurationDataBase &cdbData,
             AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s lineHeightTolMax not specified. Using default: %d", Name(), lineHeightTolMax);
         }
 
-
         if (!cdb.ReadInt32(lineWidthTolMax, "LineWidthTolMax", 1000)) {
             AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s lineWidthTolMax not specified. Using default: %d", Name(), lineWidthTolMax);
         }
@@ -663,12 +662,9 @@ bool LineFollower::ObjectLoadSetup(ConfigurationDataBase &cdbData,
             AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s lineHeightTolMin not specified. Using default: %d", Name(), lineHeightTolMin);
         }
 
-
         if (!cdb.ReadInt32(lineWidthTolMin, "LineWidthTolMin", -8)) {
             AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s lineWidthTolMin not specified. Using default: %d", Name(), lineWidthTolMin);
         }
-
-
 
         if (!cdb.ReadFloat(driveControlMin, "MinDriveControl", -5000.)) {
             AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s driveControlMin not specified. Using default: %f", Name(), driveControlMin);
@@ -688,7 +684,7 @@ bool LineFollower::ObjectLoadSetup(ConfigurationDataBase &cdbData,
         if (!cdb.ReadFloat(speedControlMin, "MinSpeedControl", -7200.)) {
             AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s speedControlMin not specified. Using default: %f", Name(), speedControlMin);
         }
-        if (!cdb.ReadFloat(driveControlMax, "MaxSpeedControl", 7200.)) {
+        if (!cdb.ReadFloat(speedControlMax, "MaxSpeedControl", 7200.)) {
             AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s speedControlMax not specified. Using default: %f", Name(), speedControlMax);
         }
 
@@ -775,12 +771,13 @@ bool LineFollower::ObjectLoadSetup(ConfigurationDataBase &cdbData,
 bool LineFollower::Init(Mat *frameMatIn,
                         VideoCapture *captureIn,
                         int showModeIn,
-                        char* bufferIn) {
+                        char* bufferIn,
+                        char* bufferOut) {
 
     capture = captureIn;
     frameMat = frameMatIn;
 
-    buffer = bufferIn;
+    outputBuffer = bufferOut;
     showMode = showModeIn;
 
     lineBandX = (frameMat->cols) * lineBandXFactor;
@@ -834,7 +831,7 @@ bool LineFollower::Init(Mat *frameMatIn,
         }
     }
 
-    for (uint32 i=0; i<zeroLineCycles; i++){
+    for (uint32 i = 0; i < zeroLineCycles; i++) {
         (*capture) >> (*frameMat);
     }
 
@@ -866,10 +863,7 @@ bool LineFollower::Init(Mat *frameMatIn,
         controls = (speedControl << 8);
         controls |= driveControl;
 
-
-        memcpy(buffer + bufferStart, &controls, sizeof(controls));
-
-        sleep(10);
+        memcpy(outputBuffer + bufferStart, &controls, sizeof(controls));
 
         printf("\nSTART!!\n");
     }
@@ -904,8 +898,8 @@ bool LineFollower::Execute() {
 
     //printf("controls %d %d\n", speedControl, driveControl);
 
-    //write on buffer
-    memcpy(buffer + bufferStart, &controls, sizeof(controls));
+    //write on outputBuffer
+    memcpy(outputBuffer + bufferStart, &controls, sizeof(controls));
     if (showMode > 1) {
         imshow("lineBandGreyThres", *lineBandGreyThres);
         if (showMode == 3) {
@@ -924,12 +918,18 @@ bool LineFollower::Execute() {
             controls = (speedControl << 8);
             controls |= driveControl;
 
-            memcpy(buffer + bufferStart, &controls, sizeof(controls));
+            memcpy(outputBuffer + bufferStart, &controls, sizeof(controls));
 
         }
     }
 
     return true;
+}
+
+bool LineFollower::ProcessHttpMessage(HttpStream &hStream) {
+
+
+    return True;
 }
 
 OBJECTLOADREGISTER(LineFollower, "$Id:LineFollower.cpp,v 1.1.1.1 2010-01-20 12:26:47 pc Exp $")

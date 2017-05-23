@@ -6,3 +6,4 @@
 \contentsline {subsection}{\numberline {1.1.2}Software}{2}
 \contentsline {section}{\numberline {1.2}Phase 2}{5}
 \contentsline {section}{\numberline {1.3}Phase 3}{8}
+\contentsline {section}{\numberline {1.4}Phase 4 (Line Follower Application)}{11}
