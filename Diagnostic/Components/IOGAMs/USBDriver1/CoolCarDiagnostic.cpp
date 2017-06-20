@@ -31,6 +31,7 @@
 
 #include "CoolCarDiagnostic.h"
 #include "base64.h"
+#include "Sleep.h"
 #include <math.h>
 
 /*---------------------------------------------------------------------------*/
@@ -42,7 +43,7 @@ static float RemapInput(float input,
                         float minOutput,
                         float factor,
                         bool constrained = false) {
-    return (input < minInput && constrained) ? (0.) : (((input - minInput) * factor) + minOutput);
+    return (input < minInput && constrained) ? (minInput) : (((input - minInput) * factor) + minOutput);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -72,7 +73,8 @@ CoolCarDiagnostic::CoolCarDiagnostic() {
     initialXposition = 0.;
     initialYposition = 0.;
     initialOrientation = 0.;
-    httpRefreshTime=1000;
+    httpRefreshTime = 1000;
+    sleepRTThreadTime = 10;
 
     frameMat = NULL;
 
@@ -161,8 +163,12 @@ bool CoolCarDiagnostic::ObjectLoadSetup(ConfigurationDataBase &cdbData,
         }
 
         if (!cdb.ReadInt32(httpRefreshTime, "HttpRefreshTime", 1000)) {
-            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s HttpRefreshTime not specified. Using default: %d", Name(),
-                                 httpRefreshTime);
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s HttpRefreshTime not specified. Using default: %d", Name(), httpRefreshTime);
+        }
+
+        if (!cdb.ReadInt32(sleepRTThreadTime, "SleepRTThreadTime", 0)) {
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s SleepRTThreadTime not specified. Using default: %d", Name(),
+                                 sleepRTThreadTime);
         }
 
     }
@@ -201,7 +207,10 @@ bool CoolCarDiagnostic::Execute() {
 
     //remap inputs to the useful measurements
     float pos = RemapInput((float) (*position), positionMinIn, positionMinOut, positionFactor, false);
-    float alpha = RemapInput((float) (*direction), directionMinIn, directionMinOut, directionFactor, true);
+    float alpha = 0.;
+    if (*direction != 0) {
+        RemapInput((float) (*direction), directionMinIn, directionMinOut, directionFactor, true);
+    }
 
     float dt = 0.;
     if (lastUpdateTime != 0) {
@@ -222,6 +231,9 @@ bool CoolCarDiagnostic::Execute() {
         y += dy * dt;
         theta += omega * dt;
         pos_1 = pos;
+    }
+    if (sleepRTThreadTime > 0) {
+        SleepMsec(sleepRTThreadTime);
     }
 
     return true;
@@ -257,10 +269,8 @@ bool CoolCarDiagnostic::ProcessHttpMessage(HttpStream &hStream) {
     hStream.keepAlive = False;
     hStream.WriteReplyHeader(False);
 
-
     hStream.Printf("<html><head><title>CoolCar-Diagnostics</title></head>\n");
     hStream.Printf("<script src=\"http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js\"></script>\n");
-
 
     hStream.Printf("<body onload=\"timedUpdate();\">\n");
 
@@ -270,35 +280,32 @@ bool CoolCarDiagnostic::ProcessHttpMessage(HttpStream &hStream) {
     hStream.Printf("var request = new XMLHttpRequest();\n");
 
     hStream.Printf("function timedUpdate() {\n");
-      hStream.Printf("var url = \"?ImgRefreshData\";\n");
-      hStream.Printf("request.open('GET', url, true);\n");
-      hStream.Printf("request.onreadystatechange = imgManager;\n");
-      hStream.Printf("request.send(null);\n");
-      hStream.Printf("window.setTimeout(timedUpdate, %d);\n",
-                     httpRefreshTime);
-      hStream.Printf("}\n");
+    hStream.Printf("var url = \"?ImgRefreshData\";\n");
+    hStream.Printf("request.open('GET', url, true);\n");
+    hStream.Printf("request.onreadystatechange = imgManager;\n");
+    hStream.Printf("request.send(null);\n");
+    hStream.Printf("window.setTimeout(timedUpdate, %d);\n", httpRefreshTime);
+    hStream.Printf("}\n");
 
-      hStream.Printf("function imgManager() {\n");
-      hStream.Printf("if(this.readyState != 4 || this.status != 200) {\n");
-      hStream.Printf("return;\n");
-      hStream.Printf("}\n");
-      hStream.Printf("eval(request.responseText);\n");
-      //hStream.Printf("img.src=imgData;\n");
-      hStream.Printf("document.getElementById(\"myimage\").src=imgData;\n");
+    hStream.Printf("function imgManager() {\n");
+    hStream.Printf("if(this.readyState != 4 || this.status != 200) {\n");
+    hStream.Printf("return;\n");
+    hStream.Printf("}\n");
+    hStream.Printf("eval(request.responseText);\n");
+    //hStream.Printf("img.src=imgData;\n");
+    hStream.Printf("document.getElementById(\"myimage\").src=imgData;\n");
 
-      hStream.Printf("for(i=0; i<5; i++){\n"
-          "document.getElementById(\"cell\"+i).innerHTML=diagnosticData[i];\n"
-      "}\n");
+    hStream.Printf("for(i=0; i<5; i++){\n"
+                   "document.getElementById(\"cell\"+i).innerHTML=diagnosticData[i];\n"
+                   "}\n");
 
-
-/*      hStream.Printf("var canvas = document.getElementById(\"canvas\");\n"
-      "var context = canvas.getContext(\"2d\");\n"
-      "context.drawImage(img, 0, 0);\n");
-*/
-      hStream.Printf("}\n");
+    /*      hStream.Printf("var canvas = document.getElementById(\"canvas\");\n"
+     "var context = canvas.getContext(\"2d\");\n"
+     "context.drawImage(img, 0, 0);\n");
+     */
+    hStream.Printf("}\n");
 
     hStream.Printf("</script>\n");
-
 
     hStream.Printf("<h1>Current diagnostics:</h1><br />");
     hStream.Printf("<p>Data was updated %f seconds ago<p/>", ((HRT::HRTCounter() - lastUpdateTime) * HRT::HRTPeriod()));
@@ -325,10 +332,6 @@ bool CoolCarDiagnostic::ProcessHttpMessage(HttpStream &hStream) {
 }
 
 OBJECTLOADREGISTER(CoolCarDiagnostic, "$Id:CoolCarDiagnostic.cpp,v 1.1.1.1 2010-01-20 12:26:47 pc Exp $")
-
-
-
-
 
 //hStream.Printf("<meta http-equiv=\"refresh\" content=\"0.2\" >");
 #if 0
@@ -382,60 +385,58 @@ hStream.Printf("<button id=\"play\">Play</button>\n"
 
 #endif
 
-
 #if 0
-    hStream.Printf("<img src=\"\" id=\"myimage\" />\n");
+hStream.Printf("<img src=\"\" id=\"myimage\" />\n");
 
-    hStream.Printf("function timedUpdate() {\n");
-    hStream.Printf("window.setTimeout(timedUpdate, %d);\n", httpRefreshTime);
-    hStream.Printf("window.location.reload(true);");
-    hStream.Printf("}\n");
+hStream.Printf("function timedUpdate() {\n");
+hStream.Printf("window.setTimeout(timedUpdate, %d);\n", httpRefreshTime);
+hStream.Printf("window.location.reload(true);");
+hStream.Printf("}\n");
 
-    vector < uchar > buf;
-    imencode(".jpg", *frameMat, buf);
+vector < uchar > buf;
+imencode(".jpg", *frameMat, buf);
 
-    uchar *enc_msg = new uchar[buf.size()];
-    for (int i = 0; i < buf.size(); i++) {
-        enc_msg[i] = buf[i];
-    }
-    string encoded = base64_encode(enc_msg, buf.size());
-    hStream.Printf("var testjpg=\"data:image/jpg;base64,%s\";\n", encoded.c_str());
-    hStream.Printf("document.getElementById(\"myimage\").src=testjpg;\n");
+uchar *enc_msg = new uchar[buf.size()];
+for (int i = 0; i < buf.size(); i++) {
+    enc_msg[i] = buf[i];
+}
+string encoded = base64_encode(enc_msg, buf.size());
+hStream.Printf("var testjpg=\"data:image/jpg;base64,%s\";\n", encoded.c_str());
+hStream.Printf("document.getElementById(\"myimage\").src=testjpg;\n");
 
-    hStream.Printf("</script>\n");
+hStream.Printf("</script>\n");
 #endif
 
 #if 0
 
-    hStream.Printf("<canvas id=\"canvas\" width=\"1600\" height=\"1600\"/>\n");
+hStream.Printf("<canvas id=\"canvas\" width=\"1600\" height=\"1600\"/>\n");
 
+hStream.Printf("<script type=\"text/JavaScript\">\n");
 
-    hStream.Printf("<script type=\"text/JavaScript\">\n");
+hStream.Printf("var img = new Image();\n");
 
-    hStream.Printf("var img = new Image();\n");
-
-    hStream.Printf("img.onload = function() {\n"
+hStream.Printf("img.onload = function() {\n"
         "var canvas = document.getElementById(\"canvas\");\n"
         "var context = canvas.getContext(\"2d\");\n"
         "context.drawImage(img, 0, 0);\n"
         "setTimeout(timedUpdate,%d);\n"
-    "}\n",httpRefreshTime);
+        "}\n",httpRefreshTime);
 
-    hStream.Printf("function timedUpdate() {\n");
-    //hStream.Printf("window.setTimeout(timedUpdate, %d);\n", httpRefreshTime);
-    //hStream.Printf("window.location.reload(true);");
+hStream.Printf("function timedUpdate() {\n");
+//hStream.Printf("window.setTimeout(timedUpdate, %d);\n", httpRefreshTime);
+//hStream.Printf("window.location.reload(true);");
 
-    vector < uchar > buf;
-    imencode(".jpg", *frameMat, buf);
+vector < uchar > buf;
+imencode(".jpg", *frameMat, buf);
 
-    uchar *enc_msg = new uchar[buf.size()];
-    for (int i = 0; i < buf.size(); i++) {
-        enc_msg[i] = buf[i];
-    }
-    string encoded = base64_encode(enc_msg, buf.size());
-    hStream.Printf("var testjpg=\"data:image/jpg;base64;\"\n");
-    hStream.Printf("testjpg=testjpg+Date.now()\n");
-    hStream.Printf("testjpg=testjpg+\",%s\";\n", encoded.c_str());
-    hStream.Printf("img.src=testjpg\n");
-    hStream.Printf("}\n");
+uchar *enc_msg = new uchar[buf.size()];
+for (int i = 0; i < buf.size(); i++) {
+    enc_msg[i] = buf[i];
+}
+string encoded = base64_encode(enc_msg, buf.size());
+hStream.Printf("var testjpg=\"data:image/jpg;base64;\"\n");
+hStream.Printf("testjpg=testjpg+Date.now()\n");
+hStream.Printf("testjpg=testjpg+\",%s\";\n", encoded.c_str());
+hStream.Printf("img.src=testjpg\n");
+hStream.Printf("}\n");
 #endif

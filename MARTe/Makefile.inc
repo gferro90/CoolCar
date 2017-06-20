@@ -36,6 +36,10 @@ SPB = ../ToolConfiguration.x GAMs/CoolCarControlGAM.x GAMs/Transmitter.x  Schedu
 	$(MARTE2_TOOLS)/DataSources/USBSignalDisplay.x \
 	$(MARTE2_TOOLS)/DataSources/USBCommunication.x \
 	$(MARTE2_TOOLS)/DataSources/Encoder_opt.x \
+	$(MARTE2_TOOLS)/DataSources/GenericStreamDriver.x \
+	$(MARTE2_TOOLS)/CfgUploader.x \
+	$(MARTE2_TOOLS)/Streams/UsbStream.x 
+	 
 	
 
 MAKEDEFAULTDIR=$(MARTE2_DIR)/MakeDefaults
@@ -69,6 +73,9 @@ INCLUDES += -I$(STM_CUBE_FW_DIR)/Drivers/CMSIS/Device/ST/STM32F7xx/Include/
 INCLUDES += -I$(STM_CUBE_FW_DIR)/Drivers/CMSIS/Include/
 INCLUDES += -I$(STM_CUBE_FW_DIR)/Drivers/BSP/Components/otm8009a/
 INCLUDES += -I$(STM_CUBE_FW_DIR)/Drivers/STM32F4xx_HAL_Driver/Src/
+INCLUDES += -I$(MARTE2_TOOLS)/CfgUploader/
+INCLUDES += -I$(MARTE2_TOOLS)/Streams/StreamParent
+
 
 # Static project libraries
 LIBRARIES_STATIC = Build/ToolConfigurationLib.a
@@ -86,6 +93,9 @@ LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/PWMDataSource.a
 LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/USBSignalDisplay.a
 LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/USBCommunication.a
 LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/Encoder_optDataSource.a
+LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/GenericStreamDriver.a
+LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/CfgUploader.a
+LIBRARIES_STATIC += $(MARTE2_TOOLS)/Build/UsbStream.a
 
 
 # Static MARTe libraries

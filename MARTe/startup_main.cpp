@@ -42,6 +42,7 @@
 #include "StreamMemoryReference.h"
 #include "Threads.h"
 #include "string.h"
+#include "CfgUploader.h"
 #include INCLUDE_SCHEDULER(__SCHEDULER__)
 
 /*#include "usbd_cdc_if.h"
@@ -63,21 +64,48 @@ extern void PrintStack(ThreadIdentifier &tid);
 static void MARTeAppLauncher(void const *ignored) {
 
     uint32 confSize = StringHelper::Length(config) + 1;
-    ConfigurationDatabase cdb;
+
     StreamMemoryReference *stream = new StreamMemoryReference(config, confSize);
     stream->Seek(0);
-    StandardParser parser(*stream, cdb);
 
-    bool ok = parser.Parse();
-    delete stream;
+    bool ok = true;
+    StreamString *cfgBuffer = new StreamString;
+    //(*cfgBuffer)="";
+
+
+    {
+        ConfigurationDatabase localCdb;
+        StandardParser localParser(*stream, localCdb);
+
+        ok = localParser.Parse();
+        delete stream;
+
+        ReferenceContainer localContainer;
+        localContainer.Initialise(localCdb);
+
+        ReferenceT < CfgUploader > cfgUploader = localContainer.Find("CfgUploader");
+
+        if (cfgUploader.IsValid()) {
+            cfgUploader->UploadCfg(*cfgBuffer);
+        }
+    }
+    ConfigurationDatabase cdb;
+    if (ok) {
+        cfgBuffer->Seek(0);
+        StandardParser globalParser(*cfgBuffer, cdb);
+        ok = globalParser.Parse();
+        //REPORT_ERROR_PARAMETERS(ErrorManagement::Warning, "Status 0 %d", ok);
+
+        delete cfgBuffer;
+    }
 
     ObjectRegistryDatabase *godb = NULL;
     if (ok) {
         godb = ObjectRegistryDatabase::Instance();
         godb->CleanUp();
 
-
         ok = godb->Initialise(cdb);
+        //REPORT_ERROR_PARAMETERS(ErrorManagement::Warning, "Status 1 %d", ok);
 
     }
 
@@ -85,19 +113,25 @@ static void MARTeAppLauncher(void const *ignored) {
     if (ok) {
         application = godb->Find("Application1");
         ok = application.IsValid();
+        //REPORT_ERROR_PARAMETERS(ErrorManagement::Warning, "Status 2 %d", ok);
 
     }
 
     if (ok) {
         ok = application->ConfigureApplication();
+        //REPORT_ERROR_PARAMETERS(ErrorManagement::Warning, "Status 3 %d", ok);
+
     }
 
     if (ok) {
         ok = application->PrepareNextState("State1");
+        //REPORT_ERROR_PARAMETERS(ErrorManagement::Warning, "Status 4 %d", ok);
+
     }
 
     if (ok) {
         application->StartExecution();
+
     }
 }
 

@@ -93,6 +93,8 @@ private:
     float initialYposition;
     float initialOrientation;
     int32 httpRefreshTime;
+    int32 sleepRTThreadTime;
+
 
     //state
     Mat *frameMat;

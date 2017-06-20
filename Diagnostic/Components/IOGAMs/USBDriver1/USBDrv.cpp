@@ -152,10 +152,10 @@ bool USBDrv::ObjectLoadSetup(ConfigurationDataBase &info,
     }
 
     int flags;
-    if ((flags = fcntl(usbFile , F_GETFL, 0))==-1){
+    if ((flags = fcntl(usbFile, F_GETFL, 0)) == -1) {
         flags = 0;
     }
-    fcntl(usbFile , F_SETFL, flags | O_NONBLOCK);
+    fcntl(usbFile, F_SETFL, flags | O_NONBLOCK);
 
     int32 speed = GetBaudRate(speedValue);
 
@@ -252,7 +252,7 @@ bool USBDrv::ObjectLoadSetup(ConfigurationDataBase &info,
     AssertErrorCondition(Information, "USBDrv::ObjectLoadSetup:: USB Module %s Correctly Initialized", Name());
 
     printf("\n6\n");
-#if 0
+
     FString stmCfgFileLocation;
     if (!cdb.ReadFString(stmCfgFileLocation, "StmCFG", "MARTe-Stm-BareMetal.cfg")) {
         AssertErrorCondition(Warning, "StmCFG::Initialise not specified. Using default:%s", usbFileLocation.Buffer());
@@ -263,24 +263,23 @@ bool USBDrv::ObjectLoadSetup(ConfigurationDataBase &info,
         AssertErrorCondition(InitialisationError, "USBDrv::STM cfg file does not exist in %s", stmCfgFileLocation.Buffer());
         return false;
     }
-#endif
     //int uartFile = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_SYNC);
 //    uint32 totalSize = strlen(toSend);
-   /* const uint32 packetSize = 63;
-    const uint32 buffSize = 64;
+    /* const uint32 packetSize = 63;
+     const uint32 buffSize = 64;
 
-    char buff[buffSize];
-    uint32 sizeToW = buffSize;
+     char buff[buffSize];
+     uint32 sizeToW = buffSize;
 
-    uint32 written = 0;
-    memset(buff, '@', sizeToW);
-    do {
-        sizeToW -= written;
-        written += write(usbFile, buff + written, sizeToW);
-    }
-    while (written < sizeToW);
-    SleepMsec(1000);
-    printf("\n7\n");*/
+     uint32 written = 0;
+     memset(buff, '@', sizeToW);
+     do {
+     sizeToW -= written;
+     written += write(usbFile, buff + written, sizeToW);
+     }
+     while (written < sizeToW);
+     SleepMsec(1000);
+     printf("\n7\n");*/
 
 #ifdef SEND_USB
     bool end = false;
@@ -323,6 +322,79 @@ bool USBDrv::ObjectLoadSetup(ConfigurationDataBase &info,
         SleepMsec(100);
     }
 #endif
+    const uint32 packetSize = 64;
+    const uint32 buffSize = 65;
+
+    char buff[buffSize];
+    uint32 sizeToW = packetSize;
+
+    //write initial sequence
+    uint32 written = 0;
+
+    memset(buff, 0, buffSize);
+    const char * initSeq = "1234";
+    memcpy(buff, initSeq, strlen(initSeq));
+
+    do {
+        sizeToW -= written;
+        written += write(usbFile, buff + written, sizeToW);
+    }
+    while (written < sizeToW);
+    SleepMsec(1000);
+    printf("\n7\n");
+
+    bool end = false;
+
+    //for (uint32 index = 0; index < totalSize; index += packetSize) {
+    while (!end) {
+        sizeToW = packetSize;
+        memset(buff, 0, buffSize);
+
+        uint32 max = packetSize;
+        if ((max = read(stmCfgFile, buff, max)) <= 0) {
+            break;
+        }
+
+        //end of file
+        if (max < packetSize) {
+            end = true;
+        }
+        /*uint32 max = (totalSize - index);
+         if (max > packetSize) {
+         max = packetSize;
+         }
+         else {
+         buff[packetSize] = '@';
+         }
+         memcpy(buff, toSend + index, max);
+         */
+        written = 0;
+        uint32 iteration = 0;
+
+        do {
+            sizeToW -= written;
+            written += write(usbFile, buff + written, sizeToW);
+            iteration++;
+        }
+        while (written < sizeToW);
+        buff[packetSize] = 0;
+        printf("\n%d bytes written on %d, %d iteration:\n [%s]", written, sizeToW, iteration, buff);
+
+        SleepMsec(100);
+    }
+
+    //write final sequence
+    memset(buff, 0, buffSize);
+    const char * finalSeq = "4321";
+    memcpy(buff, finalSeq, strlen(finalSeq));
+    sizeToW = packetSize;
+    written =0;
+    do {
+        sizeToW -= written;
+        written += write(usbFile, buff + written, sizeToW);
+    }
+    while (written < sizeToW);
+
     return true;
 }
 
@@ -372,7 +444,7 @@ bool USBDrv::ObjectDescription(StreamInterface &s,
                                bool full,
                                StreamInterface *err) {
     s.Printf("%s %s\n", ClassName(), Version());
-    // Module name
+// Module name
     s.Printf("Module Name --> %s\n", Name());
 
     return true;
@@ -490,7 +562,7 @@ bool USBDrv::ProcessHttpMessage(HttpStream &hStream) {
     hStream.Printf("<input type=\"text\" name=\"state\"><br>");
     hStream.Printf("<button type=\"submit\" name=\"changeState\" value=\"1\">Change State</button>");
     hStream.Printf("</form>\n</body></html>\n");
-    //copy to the client
+//copy to the client
     hStream.WriteReplyHeader(true);
 
     write(usbFile, inputsFromHttp, (2 * sizeof(int)));
