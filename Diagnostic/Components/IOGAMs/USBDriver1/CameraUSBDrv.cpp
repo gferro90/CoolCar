@@ -97,14 +97,14 @@ bool CameraUSBDrv::ObjectLoadSetup(ConfigurationDataBase &cdbData,
     CDBExtended cdb(cdbData);
 
     if (ret) {
-        ret = cdb.ReadInt32(outputBufferSize, "OutpurBufferSize", 1);
+        ret = cdb.ReadInt32(outputBufferSize, "OutputBufferSize", 1);
         if (ret) {
             printf("\nallocated %d for dataWriteBuffer\n", outputBufferSize);
             dataWriteBuffer = new char[outputBufferSize];
             memset(dataWriteBuffer, 0, outputBufferSize);
         }
         else {
-            AssertErrorCondition(InitialisationError, "CameraUSBDrv::ObjectLoadSetup: %s CameraID not specified. Using default: %d", Name(), cameraId);
+            AssertErrorCondition(InitialisationError, "CameraUSBDrv::ObjectLoadSetup: %s OutputBufferSize not specified", Name());
         }
 
     }
@@ -180,9 +180,9 @@ bool CameraUSBDrv::ObjectLoadSetup(ConfigurationDataBase &cdbData,
         }
         uint32 defaultSize = ((numberOfInputChannels - 1) * sizeof(uint32));
         *dataBuffer = cycleCounter;
-        while(read(usbFile, dataBuffer + 1, defaultSize)>0){
+       /* while(read(usbFile, dataBuffer + 1, defaultSize)>0){
 
-        }
+        }*/
         if (write(usbFile, dataWriteBuffer, outputBufferSize) < 0) {
             AssertErrorCondition(Warning, "CameraUSBDrv::USB write error");
         }

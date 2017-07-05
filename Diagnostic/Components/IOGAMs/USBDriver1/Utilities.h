@@ -51,6 +51,10 @@
 /*                           Class declaration                               */
 /*---------------------------------------------------------------------------*/
 
+#define PWM_SPEED_REMAP(control) PwmRemapping(control, speedControlMin, speedControlMax, speedPwmMin, speedPwmMax)
+#define PWM_DRIVE_REMAP(control) PwmRemapping(control, driveControlMin, driveControlMax, drivePwmMin, drivePwmMax)
+
+
 inline float ABS_VAL(float a) {
     return ((a) > 0) ? (a) : (-(a));
 }
@@ -75,6 +79,34 @@ enum GenericStatus {
 enum LineStatus {
     STOP = 0, ZERO_LEFT, ZERO_RIGHT, LEFT_LINE, RIGHT_LINE, TWO_LINES
 };
+
+inline int PwmRemapping(float control,
+                        float minIn,
+                        float maxIn,
+                        int minOut,
+                        int maxOut) {
+    if (control > maxIn) {
+        control = maxIn;
+    }
+    if (control < minIn) {
+        control = minIn;
+    }
+
+    float rangeIn = maxIn - minIn;
+    int rangeOut = maxOut - minOut;
+    return (int) (((control - minIn) * rangeOut) / rangeIn) + minOut;
+}
+
+
+inline float RemapInput(float input,
+                        float minInput,
+                        float minOutput,
+                        float factor,
+                        bool constrained = false) {
+    return (input < minInput && constrained) ? (minOutput) : (((input - minInput) * factor) + minOutput);
+}
+
+
 
 using namespace cv;
 using namespace std;

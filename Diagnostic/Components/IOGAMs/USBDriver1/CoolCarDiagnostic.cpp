@@ -38,14 +38,6 @@
 /*                           Static definitions                              */
 /*---------------------------------------------------------------------------*/
 
-static float RemapInput(float input,
-                        float minInput,
-                        float minOutput,
-                        float factor,
-                        bool constrained = false) {
-    return (input < minInput && constrained) ? (minInput) : (((input - minInput) * factor) + minOutput);
-}
-
 /*---------------------------------------------------------------------------*/
 /*                           Method definitions                              */
 /*---------------------------------------------------------------------------*/
@@ -75,6 +67,21 @@ CoolCarDiagnostic::CoolCarDiagnostic() {
     initialOrientation = 0.;
     httpRefreshTime = 1000;
     sleepRTThreadTime = 10;
+    driveRefStep = 0.;
+    speedRefStep = 0.;
+
+    zeroSpeedControl = 0.;
+    zeroDriveControl = 0.;
+
+    driveControlMin = 0.;
+    driveControlMax = 0.;
+    drivePwmMin = 0;
+    drivePwmMax = 0;
+
+    speedControlMin = 0.;
+    speedControlMax = 0.;
+    speedPwmMin = 0;
+    speedPwmMax = 0;
 
     frameMat = NULL;
 
@@ -95,6 +102,10 @@ CoolCarDiagnostic::CoolCarDiagnostic() {
 
     omega = 0.;
     speed = 0.;
+    showCamera = false;
+    manualDrive = false;
+    speedReference = 0.;
+    driveReference = 0.;
 }
 
 CoolCarDiagnostic::~CoolCarDiagnostic() {
@@ -171,6 +182,59 @@ bool CoolCarDiagnostic::ObjectLoadSetup(ConfigurationDataBase &cdbData,
                                  sleepRTThreadTime);
         }
 
+        if (!cdb.ReadInt32((int32&) showCamera, "ShowCamera", 0)) {
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s ShowCamera not specified. Using default: %d", Name(), showCamera);
+        }
+        if (showCamera != 0) {
+            showCamera = 1;
+        }
+
+        if (!cdb.ReadFloat(driveRefStep, "DriveRefStep", 0.)) {
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s DriveRefStep not specified. Using default: %f", Name(), driveRefStep);
+        }
+
+        if (!cdb.ReadFloat(speedRefStep, "SpeedRefStep", 0.)) {
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s SpeedRefStep not specified. Using default: %f", Name(), speedRefStep);
+        }
+
+        if (!cdb.ReadFloat(driveControlMin, "MinDriveControl", -5000.)) {
+            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s driveControlMin not specified. Using default: %f", Name(), driveControlMin);
+        }
+        if (!cdb.ReadFloat(driveControlMax, "MaxDriveControl", 5000.)) {
+            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s driveControlMax not specified. Using default: %f", Name(), driveControlMax);
+        }
+
+        if (!cdb.ReadInt32(drivePwmMin, "MinDrivePwm", 140)) {
+            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s drivePwmMin not specified. Using default: %d", Name(), drivePwmMin);
+        }
+
+        if (!cdb.ReadInt32(drivePwmMax, "MaxDrivePwm", 340)) {
+            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s drivePwmMax not specified. Using default: %d", Name(), drivePwmMax);
+        }
+
+        if (!cdb.ReadFloat(speedControlMin, "MinSpeedControl", -7200.)) {
+            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s speedControlMin not specified. Using default: %f", Name(), speedControlMin);
+        }
+        if (!cdb.ReadFloat(speedControlMax, "MaxSpeedControl", 7200.)) {
+            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s speedControlMax not specified. Using default: %f", Name(), speedControlMax);
+        }
+
+        if (!cdb.ReadInt32(speedPwmMin, "MinSpeedPwm", 200)) {
+            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s speedPwmMin not specified. Using default: %d", Name(), speedPwmMin);
+        }
+
+        if (!cdb.ReadInt32(speedPwmMax, "MaxSpeedPwm", 400)) {
+            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s speedPwmMin not specified. Using default: %d", Name(), speedPwmMin);
+        }
+
+        if (!cdb.ReadFloat(zeroSpeedControl, "ZeroSpeedControl", 0.)) {
+            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s zeroSpeedControl not specified. Using default: %f", Name(), zeroSpeedControl);
+        }
+
+        if (!cdb.ReadFloat(zeroDriveControl, "ZeroDriveControl", 0.)) {
+            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s zeroDriveControl not specified. Using default: %f", Name(), zeroDriveControl);
+        }
+
     }
     return ret;
 }
@@ -200,6 +264,15 @@ bool CoolCarDiagnostic::Init(Mat *frameMatIn,
     y = initialYposition;
     theta = initialOrientation;
 
+    int32 speedControl = PWM_SPEED_REMAP(zeroSpeedControl);
+    int32 driveControl = PWM_DRIVE_REMAP(zeroDriveControl);
+    speedControl -= speedPwmMin;
+    driveControl -= drivePwmMin;
+    uint16 controls = (speedControl << 8);
+    controls |= driveControl;
+
+    memcpy(outputBuffer, &controls, sizeof(controls));
+
     return true;
 }
 
@@ -209,7 +282,7 @@ bool CoolCarDiagnostic::Execute() {
     float pos = RemapInput((float) (*position), positionMinIn, positionMinOut, positionFactor, false);
     float alpha = 0.;
     if (*direction != 0) {
-        RemapInput((float) (*direction), directionMinIn, directionMinOut, directionFactor, true);
+        alpha = RemapInput((float) (*direction) + drivePwmMin, directionMinIn, directionMinOut, directionFactor, true);
     }
 
     float dt = 0.;
@@ -232,6 +305,18 @@ bool CoolCarDiagnostic::Execute() {
         theta += omega * dt;
         pos_1 = pos;
     }
+
+    int32 speedControl = PWM_SPEED_REMAP(zeroSpeedControl + speedReference);
+    int32 driveControl = PWM_DRIVE_REMAP(zeroDriveControl + driveReference);
+
+    speedControl -= speedPwmMin;
+    driveControl -= drivePwmMin;
+
+    uint16 controls = (speedControl << 8);
+    controls |= (driveControl);
+
+    memcpy(outputBuffer, &controls, sizeof(controls));
+
     if (sleepRTThreadTime > 0) {
         SleepMsec(sleepRTThreadTime);
     }
@@ -248,9 +333,27 @@ bool CoolCarDiagnostic::ProcessHttpMessage(HttpStream &hStream) {
 
     FString ajaxString;
     ajaxString.SetSize(0);
+    if (showCamera) {
+        ajaxString.Printf("var imgData = \"data:image/jpg;base64,%s\";\n", encoded.c_str());
+    }
+    else {
+        //ajaxString.Printf("var imgData = [];\n");
+    }
 
-    ajaxString.Printf("var imgData = \"data:image/jpg;base64,%s\";\n", encoded.c_str());
     ajaxString.Printf("var diagnosticData = [%f, %f, %f, %f, %f];\n", x, y, theta, speed, omega);
+
+    FString showImageStr;
+    showImageStr.SetSize(0);
+
+    if (hStream.Switch("InputCommands.showImage")) {
+        hStream.Seek(0);
+        hStream.GetToken(showImageStr, "");
+        hStream.Switch((uint32) 0);
+    }
+
+    if (showImageStr == "1") {
+        showCamera = !showCamera;
+    }
 
     FString refreshData;
     refreshData.SetSize(0);
@@ -264,6 +367,77 @@ bool CoolCarDiagnostic::ProcessHttpMessage(HttpStream &hStream) {
         return True;
     }
 
+    FString manualStr;
+    manualStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.manualDriveButton")) {
+        hStream.Seek(0);
+        hStream.GetToken(manualStr, "");
+        hStream.Switch((uint32) 0);
+        manualDrive = !manualDrive;
+    }
+
+    FString upStr;
+    upStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.Up")) {
+        hStream.Seek(0);
+        hStream.GetToken(upStr, "");
+        hStream.Switch((uint32) 0);
+        speedReference += speedRefStep;
+    }
+
+    FString downStr;
+    downStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.Down")) {
+        hStream.Seek(0);
+        hStream.GetToken(downStr, "");
+        hStream.Switch((uint32) 0);
+        speedReference -= speedRefStep;
+    }
+
+    FString rightStr;
+    rightStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.Right")) {
+        hStream.Seek(0);
+        hStream.GetToken(rightStr, "");
+        hStream.Switch((uint32) 0);
+        driveReference -= driveRefStep;
+    }
+
+    FString leftStr;
+    leftStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.Left")) {
+        hStream.Seek(0);
+        hStream.GetToken(leftStr, "");
+        hStream.Switch((uint32) 0);
+        driveReference += driveRefStep;
+    }
+
+
+    FString stopSpeedStr;
+    stopSpeedStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.stopSpeed")) {
+        hStream.Seek(0);
+        hStream.GetToken(stopSpeedStr, "");
+        hStream.Switch((uint32) 0);
+        speedReference = 0;
+    }
+
+    FString stopDriveStr;
+    stopDriveStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.stopDrive")) {
+        hStream.Seek(0);
+        hStream.GetToken(stopDriveStr, "");
+        hStream.Switch((uint32) 0);
+        driveReference = 0;
+    }
+
     hStream.SSPrintf("OutputHttpOtions.Content-Type", "text/html");
 
     hStream.keepAlive = False;
@@ -273,8 +447,9 @@ bool CoolCarDiagnostic::ProcessHttpMessage(HttpStream &hStream) {
     hStream.Printf("<script src=\"http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js\"></script>\n");
 
     hStream.Printf("<body onload=\"timedUpdate();\">\n");
-
-    hStream.Printf("<img src=\"\" id=\"myimage\" />\n");
+    if (showCamera) {
+        hStream.Printf("<img src=\"\" id=\"myimage\" />\n");
+    }
     hStream.Printf("<script>\n");
 
     hStream.Printf("var request = new XMLHttpRequest();\n");
@@ -293,8 +468,9 @@ bool CoolCarDiagnostic::ProcessHttpMessage(HttpStream &hStream) {
     hStream.Printf("}\n");
     hStream.Printf("eval(request.responseText);\n");
     //hStream.Printf("img.src=imgData;\n");
-    hStream.Printf("document.getElementById(\"myimage\").src=imgData;\n");
-
+    if (showCamera) {
+        hStream.Printf("document.getElementById(\"myimage\").src=imgData;\n");
+    }
     hStream.Printf("for(i=0; i<5; i++){\n"
                    "document.getElementById(\"cell\"+i).innerHTML=diagnosticData[i];\n"
                    "}\n");
@@ -325,9 +501,23 @@ bool CoolCarDiagnostic::ProcessHttpMessage(HttpStream &hStream) {
 
     hStream.Printf("</table><br />");
 
+    hStream.Printf("<form>");
+    hStream.Printf("<button type=\"submit\" name=\"showImage\" value=\"1\">Show/Hide Camera</button><br>\n");
+    hStream.Printf("<button type=\"submit\" name=\"manualDriveButton\" value=\"1\">Manual Drive</button><br>\n");
+
+    if (manualDrive) {
+        hStream.Printf("<button type=\"submit\" name=\"Up\" value=\"1\">UP</button>\n");
+        hStream.Printf("<button type=\"submit\" name=\"Left\" value=\"1\">LEFT</button>\n");
+        hStream.Printf("<button type=\"submit\" name=\"Right\" value=\"1\">RIGHT</button>\n");
+        hStream.Printf("<button type=\"submit\" name=\"Down\" value=\"1\">DOWN</button><br>\n");
+
+        hStream.Printf("<button type=\"submit\" name=\"stopSpeed\" value=\"1\">STOP SPEED</button>\n");
+        hStream.Printf("<button type=\"submit\" name=\"stopDrive\" value=\"1\">STOP DRIVE</button>\n");
+    }
+    hStream.Printf("</form>\n\n");
+
     hStream.Printf("</body></html>");
     hStream.WriteReplyHeader(True);
-
     return True;
 }
 

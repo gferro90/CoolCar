@@ -31,29 +31,6 @@
 
 #include "LineFollower.h"
 
-#define PWM_SPEED_REMAP(control) PwmRemapping(control, speedControlMin, speedControlMax, speedPwmMin, speedPwmMax)
-#define PWM_DRIVE_REMAP(control) PwmRemapping(control, driveControlMin, driveControlMax, drivePwmMin, drivePwmMax)
-
-/*---------------------------------------------------------------------------*/
-/*                           Static definitions                              */
-/*---------------------------------------------------------------------------*/
-
-static int PwmRemapping(float control,
-                        float minIn,
-                        float maxIn,
-                        int minOut,
-                        int maxOut) {
-    if (control > maxIn) {
-        control = maxIn;
-    }
-    if (control < minIn) {
-        control = minIn;
-    }
-
-    float rangeIn = maxIn - minIn;
-    int rangeOut = maxOut - minOut;
-    return (int) (((control - minIn) * rangeOut) / rangeIn) + minOut;
-}
 
 int LineFollower::DetectSignal(Mat &hsv_frame,
                                Mat &thresholded) {

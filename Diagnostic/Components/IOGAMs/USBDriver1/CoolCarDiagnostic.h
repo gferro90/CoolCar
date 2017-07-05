@@ -71,7 +71,6 @@ public:
 
     virtual bool ProcessHttpMessage(HttpStream &hStream);
 
-
 private:
 
     VideoCapture *capture;
@@ -79,7 +78,6 @@ private:
     //config params
     int32 positionIndex;
     int32 directionIndex;
-
 
     float positionFactor;
     float directionFactor;
@@ -95,6 +93,21 @@ private:
     int32 httpRefreshTime;
     int32 sleepRTThreadTime;
 
+    float speedRefStep;
+    float driveRefStep;
+
+    float zeroSpeedControl;
+    float zeroDriveControl;
+
+    float driveControlMin;
+    float driveControlMax;
+    int32 drivePwmMin;
+    int32 drivePwmMax;
+
+    float speedControlMin;
+    float speedControlMax;
+    int32 speedPwmMin;
+    int32 speedPwmMax;
 
     //state
     Mat *frameMat;
@@ -108,11 +121,16 @@ private:
     float speed;
     float omega;
 
-
     int32 *position;
     float pos_1;
     int32 *direction;
     uint64 lastUpdateTime;
+
+    bool showCamera;
+    bool manualDrive;
+    float driveReference;
+    float speedReference;
+
 };
 
 /*---------------------------------------------------------------------------*/
