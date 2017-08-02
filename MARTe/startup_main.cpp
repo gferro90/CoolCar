@@ -84,8 +84,8 @@ static void MARTeAppLauncher(void const *ignored) {
         localContainer.Initialise(localCdb);
 
         ReferenceT < CfgUploader > cfgUploader = localContainer.Find("CfgUploader");
-
-        if (cfgUploader.IsValid()) {
+        ok = cfgUploader.IsValid();
+        if (ok) {
             cfgUploader->UploadCfg(*cfgBuffer);
         }
     }

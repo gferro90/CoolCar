@@ -198,41 +198,41 @@ bool CoolCarDiagnostic::ObjectLoadSetup(ConfigurationDataBase &cdbData,
         }
 
         if (!cdb.ReadFloat(driveControlMin, "MinDriveControl", -5000.)) {
-            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s driveControlMin not specified. Using default: %f", Name(), driveControlMin);
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s driveControlMin not specified. Using default: %f", Name(), driveControlMin);
         }
         if (!cdb.ReadFloat(driveControlMax, "MaxDriveControl", 5000.)) {
-            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s driveControlMax not specified. Using default: %f", Name(), driveControlMax);
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s driveControlMax not specified. Using default: %f", Name(), driveControlMax);
         }
 
         if (!cdb.ReadInt32(drivePwmMin, "MinDrivePwm", 140)) {
-            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s drivePwmMin not specified. Using default: %d", Name(), drivePwmMin);
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s drivePwmMin not specified. Using default: %d", Name(), drivePwmMin);
         }
 
         if (!cdb.ReadInt32(drivePwmMax, "MaxDrivePwm", 340)) {
-            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s drivePwmMax not specified. Using default: %d", Name(), drivePwmMax);
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s drivePwmMax not specified. Using default: %d", Name(), drivePwmMax);
         }
 
         if (!cdb.ReadFloat(speedControlMin, "MinSpeedControl", -7200.)) {
-            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s speedControlMin not specified. Using default: %f", Name(), speedControlMin);
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s speedControlMin not specified. Using default: %f", Name(), speedControlMin);
         }
         if (!cdb.ReadFloat(speedControlMax, "MaxSpeedControl", 7200.)) {
-            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s speedControlMax not specified. Using default: %f", Name(), speedControlMax);
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s speedControlMax not specified. Using default: %f", Name(), speedControlMax);
         }
 
         if (!cdb.ReadInt32(speedPwmMin, "MinSpeedPwm", 200)) {
-            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s speedPwmMin not specified. Using default: %d", Name(), speedPwmMin);
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s speedPwmMin not specified. Using default: %d", Name(), speedPwmMin);
         }
 
         if (!cdb.ReadInt32(speedPwmMax, "MaxSpeedPwm", 400)) {
-            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s speedPwmMin not specified. Using default: %d", Name(), speedPwmMin);
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s speedPwmMin not specified. Using default: %d", Name(), speedPwmMin);
         }
 
         if (!cdb.ReadFloat(zeroSpeedControl, "ZeroSpeedControl", 0.)) {
-            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s zeroSpeedControl not specified. Using default: %f", Name(), zeroSpeedControl);
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s zeroSpeedControl not specified. Using default: %f", Name(), zeroSpeedControl);
         }
 
         if (!cdb.ReadFloat(zeroDriveControl, "ZeroDriveControl", 0.)) {
-            AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s zeroDriveControl not specified. Using default: %f", Name(), zeroDriveControl);
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s zeroDriveControl not specified. Using default: %f", Name(), zeroDriveControl);
         }
 
     }

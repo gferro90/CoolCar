@@ -27,31 +27,18 @@
 #include "FastPollingMutexSem.h"
 #include "USBDrv.h"
 #include "Sleep.h"
+#if 0
 #include "stdio.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-
+#endif
 //#define SEND_USB
 //#define TEST_SCHEDULER
 //#define TEST_INTERRUPT_SCHEDULER
 
-static int32 GetBaudRate(int32 speedVal) {
 
-    int32 speeds[] = { B50, B75, B110, B134, B150, B200, B300, B600, B1200, B1800, B2400, B4800, B9600, B19200, B38400, B57600, B115200, B230400, 0 };
-    int32 speedValues[] = { 50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 0 };
-
-    int32 i = 0;
-    while (speedValues[i] != 0) {
-        if (speedValues[i] == speedVal) {
-            return speeds[i];
-        }
-        i++;
-    }
-    return 0;
-
-}
 
 /**
  * Enable System Acquisition

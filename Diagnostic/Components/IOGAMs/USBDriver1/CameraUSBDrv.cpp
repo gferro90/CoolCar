@@ -112,6 +112,8 @@ bool CameraUSBDrv::ObjectLoadSetup(ConfigurationDataBase &cdbData,
     int32 sleepAfterInit=0;
     //Initialisation
     if (ret) {
+        printf("\nCam 1\n");
+
         if (!cdb.ReadInt32(cameraId, "CameraID", 0)) {
             AssertErrorCondition(Warning, "CameraUSBDrv::ObjectLoadSetup: %s CameraID not specified. Using default: %d", Name(), cameraId);
         }
@@ -132,8 +134,11 @@ bool CameraUSBDrv::ObjectLoadSetup(ConfigurationDataBase &cdbData,
         }
     }
 
+
     // camera intialisation
     if (ret) {
+        printf("\nCam 2\n");
+
         // ranges of HSV boundaries
         int t1min = 0, t1max = 0, t2min = 0, t2max = 0, t3min = 0, t3max = 0;
 
@@ -154,6 +159,8 @@ bool CameraUSBDrv::ObjectLoadSetup(ConfigurationDataBase &cdbData,
     }
 
     if (ret) {
+        printf("\nCam 3\n");
+
         uint32 mySize = Size();
 
         for (uint32 i = 0u; i < mySize; i++) {

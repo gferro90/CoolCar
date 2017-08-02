@@ -31,6 +31,13 @@
 #if !defined (_USB_DRV)
 #define _USB_DRV
 
+#define int64 int64_t
+#define uint64 uint64_t
+#include "Utilities.h"
+#undef int64
+#undef uint64
+#define False false
+#define True true
 #include "System.h"
 #include "GenericAcqModule.h"
 #include "File.h"
@@ -171,7 +178,7 @@ public:
     /** Saves Object Parameters to the ConfigurationDataBase */
     virtual bool ObjectSaveSetup(ConfigurationDataBase &info,
                                  StreamInterface *err) {
-        return True;
+        return true;
     }
     ;
 
@@ -181,12 +188,12 @@ public:
                                    StreamInterface *err);
 
     /** Set board used as input */
-    virtual bool SetInputBoardInUse(bool on = True) {
+    virtual bool SetInputBoardInUse(bool on = true) {
         return true;
     }
 
     /** Set board used as output */
-    virtual bool SetOutputBoardInUse(bool on = True) {
+    virtual bool SetOutputBoardInUse(bool on = true) {
         return true;
     }
 
@@ -211,7 +218,7 @@ public:
     // Called at pulse start
     bool PulseStart() {
         cycleCounter = 0;
-        return True;
+        return true;
     }
 };
 

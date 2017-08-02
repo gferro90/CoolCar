@@ -31,6 +31,7 @@
 /*---------------------------------------------------------------------------*/
 /*                        Project header includes                            */
 /*---------------------------------------------------------------------------*/
+#ifndef NO_OPENCV
 #include <cv.h>
 #include <highgui.h>
 #include <cxcore.h>
@@ -38,6 +39,7 @@
 //#include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -47,6 +49,13 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/signal.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+
 /*---------------------------------------------------------------------------*/
 /*                           Class declaration                               */
 /*---------------------------------------------------------------------------*/
@@ -69,11 +78,17 @@ inline bool InRange(float input,
     return (input >= min) && (input <= max);
 }
 
+inline int CEIL(int a, int b){
+    return (a/b)+(a%b>0);
+}
+
+inline int FIX(int a, int b){
+    return (a/b)+((float)(a/b)-(a/b)>0.5);
+}
 
 enum GenericStatus {
     FOLLOW_RIGHT = 0, FOLLOW_LEFT
 };
-
 
 
 enum LineStatus {
@@ -107,8 +122,24 @@ inline float RemapInput(float input,
 }
 
 
+inline int GetBaudRate(int speedVal) {
 
+    int speeds[] = { B50, B75, B110, B134, B150, B200, B300, B600, B1200, B1800, B2400, B4800, B9600, B19200, B38400, B57600, B115200, B230400, 0 };
+    int speedValues[] = { 50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 0 };
+
+    int i = 0;
+    while (speedValues[i] != 0) {
+        if (speedValues[i] == speedVal) {
+            return speeds[i];
+        }
+        i++;
+    }
+    return 0;
+
+}
+#ifndef NO_OPENCV
 using namespace cv;
+#endif
 using namespace std;
 /*---------------------------------------------------------------------------*/
 /*                        Inline method definitions                          */
