@@ -113,7 +113,12 @@ private:
     int32 maxColIndex;
 
     int32 packetSize;
+    int32 isUDP;
+    int32 encode;
+
     //state
+    struct sockaddr_in server;
+
     Mat *frameMat;
     Mat *newFrame;
     //outputBuffer

@@ -35,6 +35,19 @@
 /*                           Static definitions                              */
 /*---------------------------------------------------------------------------*/
 
+#define writeOnSocket(fd, pointer, size, isUDP, remote) \
+    if(isUDP)\
+        sendto(fd, pointer, size, 0, (struct sockaddr *) remote, sizeof(struct sockaddr_in));\
+    else\
+        write(fd, pointer, size);
+
+#define readFromSocket(fd, pointer, size, isUDP, remote) \
+    if(isUDP){\
+        unsigned int len=sizeof(struct sockaddr_in);\
+        recvfrom(fd, pointer, size, 0, (struct sockaddr *) remote, &len);\
+    }\
+    else\
+        read(fd, pointer, size);
 /*---------------------------------------------------------------------------*/
 /*                           Method definitions                              */
 /*---------------------------------------------------------------------------*/
@@ -78,7 +91,8 @@ RemoteDriverClient::RemoteDriverClient() {
     initialXposition = 0.;
     initialYposition = 0.;
     initialOrientation = 0.;
-
+    isUDP = 0;
+    encode = 0;
     //state
     frameMat = NULL;
     newFrame = NULL;
@@ -235,7 +249,12 @@ bool RemoteDriverClient::ObjectLoadSetup(ConfigurationDataBase &cdbData,
         if (!cdb.ReadInt32(packetSize, "PacketSize", 1024)) {
             AssertErrorCondition(Warning, "RemoteDriverClient::ObjectLoadSetup: %s PacketSize not specified. Using Default %d", Name(), packetSize);
         }
-
+        if (!cdb.ReadInt32(isUDP, "IsUDP", 0)) {
+            AssertErrorCondition(Warning, "RemoteDriverClient::ObjectLoadSetup: %s IsUDP not specified. Using Default %d", Name(), isUDP);
+        }
+        if (!cdb.ReadInt32(encode, "Encode", 1)) {
+            AssertErrorCondition(Warning, "RemoteDriverClient::ObjectLoadSetup: %s Decode not specified. Using Default %d", Name(), encode);
+        }
     }
     return ret;
 }
@@ -291,30 +310,60 @@ bool RemoteDriverClient::Init(Mat *frameMatIn,
     direction = (int32*) (inputBuffer + directionIndex);
 
     //normal client connection to the server ip
-    struct sockaddr_in client;
-    socketFd = socket(AF_INET, SOCK_STREAM, 0);
-    if (socketFd < 0) {
-        AssertErrorCondition(InitialisationError, "RemoteDriverClient::Init: Failed creation of socket = %d", socketFd);
-        printf("\nfailed socket creation\n");
-        return false;
-    }
-    client.sin_family = AF_INET;
-    client.sin_port = htons(port);
-    inet_aton(ipAddress.Buffer(), &(client.sin_addr));
-    printf("\nConnecting ip=%s port=%d...\n", ipAddress.Buffer(), port);
 
-    if (connect(socketFd, (struct sockaddr*) &client, sizeof(client)) == -1) {
-        AssertErrorCondition(InitialisationError, "RemoteDriverClient::Init: Failed connection to server ip %s on port %d", ipAddress.Buffer(), port);
-        printf("\nfailed connect\n");
-        return false;
+    if (isUDP) {
+
+        //normal client connection to the server ip
+        socketFd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        if (socketFd < 0) {
+            AssertErrorCondition(InitialisationError, "RemoteDriverClient::Init: Failed creation of socket = %d", socketFd);
+            printf("\nfailed socket creation\n");
+            return false;
+        }
+        server.sin_family = AF_INET;
+        server.sin_port = htons(port);
+        inet_aton(ipAddress.Buffer(), &(server.sin_addr));
+        printf("\nConnecting ip=%s port=%d...\n", ipAddress.Buffer(), port);
+        /*
+         //send to the server the packet size
+         writeOnSocket(socketFd, &packetSize, sizeof(int32), isUDP, &server);
+
+         //read the initial controls
+         uint16 controls = 0;
+         readFromSocket(socketFd, &controls, sizeof(controls), isUDP, &server);
+         */
+    }
+    else {
+
+        socketFd = socket(AF_INET, SOCK_STREAM, 0);
+        if (socketFd < 0) {
+            AssertErrorCondition(InitialisationError, "RemoteDriverClient::Init: Failed creation of socket = %d", socketFd);
+            printf("\nfailed socket creation\n");
+            return false;
+        }
+        server.sin_family = AF_INET;
+        server.sin_port = htons(port);
+        inet_aton(ipAddress.Buffer(), &(server.sin_addr));
+        printf("\nConnecting ip=%s port=%d...\n", ipAddress.Buffer(), port);
+
+        if (connect(socketFd, (struct sockaddr*) &server, sizeof(server)) == -1) {
+            AssertErrorCondition(InitialisationError, "RemoteDriverClient::Init: Failed connection to server ip %s on port %d", ipAddress.Buffer(), port);
+            printf("\nfailed connect\n");
+            return false;
+        }
     }
 
+    //send to the server the image size
+    if (!encode) {
+        int figSize[] = { newFrame->rows, newFrame->cols };
+        writeOnSocket(socketFd, figSize, sizeof(figSize), isUDP, &server);
+    }
     //send to the server the packet size
-    write(socketFd, &packetSize, sizeof(int32));
+    writeOnSocket(socketFd, &packetSize, sizeof(int32), isUDP, &server);
 
     //read the initial controls
     uint16 controls = 0;
-    read(socketFd, &controls, sizeof(controls));
+    readFromSocket(socketFd, &controls, sizeof(controls), isUDP, &server);
 
     //printf("\nread controls %d %d\n", controls&0xff, controls>>8);
 
@@ -369,11 +418,14 @@ bool RemoteDriverClient::Execute() {
     float diagnosticData[] = { x, y, theta, speed, omega };
     //write the diagnostic data
     //printf("\nwriting d data...\n");
-    write(socketFd, diagnosticData, 5 * sizeof(float));
+    writeOnSocket(socketFd, diagnosticData, 5 * sizeof(float), isUDP, &server);
 
-    //read the mode
+/////////////////////////////////////
     int32 mode = 0;
-    read(socketFd, &mode, sizeof(int32));
+    readFromSocket(socketFd, &mode, sizeof(int32), isUDP, &server);
+
+    Mat *usedFrame = NULL;
+
     string encoded;
     switch (mode) {
     //no image to send
@@ -382,22 +434,88 @@ bool RemoteDriverClient::Execute() {
     }
         break;
     case 1: {
-        vector < uchar > buf;
-        Mat *grayFrame = new Mat(newFrame->size(), CV_8UC1);
-        cvtColor(*newFrame, *grayFrame, CV_BGR2GRAY);
-        imencode(".jpg", *grayFrame, buf);
-        encoded = base64_encode(&buf[0], buf.size());
-        delete grayFrame;
+        usedFrame = new Mat(newFrame->size(), CV_8UC1);
+        Mat *tmp = usedFrame;
+        if (!usedFrame->isContinuous()) {
+            usedFrame = new Mat(tmp->clone());
+            delete tmp;
+        }
+        cvtColor(*newFrame, *usedFrame, CV_BGR2GRAY);
+        if (encode) {
+            vector < uchar > buf;
+            imencode(".jpg", *usedFrame, buf);
+            encoded = base64_encode(&buf[0], buf.size());
+        }
     }
         break;
     case 2: {
-        vector < uchar > buf;
-        imencode(".jpg", *newFrame, buf);
-        encoded = base64_encode(&buf[0], buf.size());
+        usedFrame = new Mat(newFrame->clone());
+        if (encode) {
+            vector < uchar > buf;
+            imencode(".jpg", *usedFrame, buf);
+            encoded = base64_encode(&buf[0], buf.size());
+        }
     }
 
     }
 
+    //the total size to be transferred
+    uint32 totalSize = (encode) ? (strlen(encoded.c_str())) : (usedFrame->total() * usedFrame->elemSize()); // (usedFrame->rows * usedFrame->cols * ((mode == 2) ? (3) : (1)));
+    //how many packets
+    uint32 numberOfPackets = CEIL(totalSize, packetSize);
+
+    //printf("\nnumberOfPackets=%d, totalSize=%d\n", numberOfPackets, totalSize);
+    uint32 sizeToWrite = 0;
+    uint32 k = 0u;
+    const char* initPointer = (encode) ? (encoded.c_str()) : ((const char*) usedFrame->data);
+    for (k = 0u; k < numberOfPackets; k++) {
+        //transfer packet per packet. The other part understand that the transmission ended
+        //by checking if the size is minor than packetSize.
+        const char* buffer = initPointer + k * packetSize;
+        int remSize = totalSize - (k * packetSize);
+        sizeToWrite = packetSize;
+        if (remSize < packetSize) {
+            sizeToWrite = remSize;
+        }
+        writeOnSocket(socketFd, buffer, sizeToWrite, isUDP, &server);
+    }
+    //send null char if the other part cannot see the end of transmission
+    if (encode) {
+        uint8 termChar = 0x1a;
+        writeOnSocket(socketFd, &termChar, 1, isUDP, &server);
+    }
+    if (usedFrame != NULL) {
+        delete usedFrame;
+    }
+
+#if 0
+
+    //read the mode
+    int32 mode = 0;
+    readFromSocket(socketFd, &mode, sizeof(int32), isUDP, &server);
+    string encoded;
+    switch (mode) {
+        //no image to send
+        case 0: {
+            encoded = "";
+        }
+        break;
+        case 1: {
+            vector < uchar > buf;
+            Mat *grayFrame = new Mat(newFrame->size(), CV_8UC1);
+            cvtColor(*newFrame, *grayFrame, CV_BGR2GRAY);
+            imencode(".jpg", *grayFrame, buf);
+            encoded = base64_encode(&buf[0], buf.size());
+            delete grayFrame;
+        }
+        break;
+        case 2: {
+            vector < uchar > buf;
+            imencode(".jpg", *newFrame, buf);
+            encoded = base64_encode(&buf[0], buf.size());
+        }
+
+    }
     //the total size to be transferred
     uint32 totalSize = strlen(encoded.c_str());
     //how many packets
@@ -412,16 +530,16 @@ bool RemoteDriverClient::Execute() {
         const char* buffer = encoded.c_str() + k * packetSize;
         sizeToWrite = (strlen(buffer) < packetSize) ? (strlen(buffer)) : (packetSize);
 
-        write(socketFd, buffer, sizeToWrite);
+        writeOnSocket(socketFd, buffer, sizeToWrite, isUDP, &server);
     }
     //send null char if the other part cannot see the end of transmission
     uint8 termChar = 0x1a;
-    write(socketFd, &termChar, 1);
-
+    writeOnSocket(socketFd, &termChar, 1, isUDP, &server);
+#endif
     //read controls
     uint16 controls = 0;
     //printf("\nreading controls...\n");
-    read(socketFd, &controls, sizeof(controls));
+    readFromSocket(socketFd, &controls, sizeof(controls), isUDP, &server);
     // printf("\nread controls %d %d\n", controls&0xff, controls>>8);
 
     memcpy(outputBuffer, &controls, sizeof(controls));
@@ -430,19 +548,6 @@ bool RemoteDriverClient::Execute() {
 }
 
 bool RemoteDriverClient::ProcessHttpMessage(HttpStream &hStream) {
-           hStream.SSPrintf("OutputHttpOtions.Content-Type", "text/html");
-           hStream.Printf("<html>\n"
-                   "<head>\n"
-                   "<meta charset=\"UTF-8\">\n"
-                   "</head>\n"
-                   "<body>\n"
-                   "<script language=\"javascript\" type=\"text/javascript\" src=\"/P5_DIR/libraries/p5.js\"></script>\n"
-                   "<script language=\"javascript\" type=\"text/javascript\" src=\"/P5_DIR/sketch.js\"></script>\n"
-                   "<style> body {padding: 0; margin: 0;} </style>\n"
-                   "</body>\n"
-                   "</html>\n",
-                   10);
-       hStream.WriteReplyHeader(True);
     return true;
 
 }

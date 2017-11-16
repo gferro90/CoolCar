@@ -31,7 +31,6 @@
 
 #include "LineFollower.h"
 
-
 int LineFollower::DetectSignal(Mat &hsv_frame,
                                Mat &thresholded) {
     float speedControl = standardSpeedControl;
@@ -564,6 +563,7 @@ LineFollower::LineFollower() {
     outputBuffer = NULL;
 
     signals = NULL;
+    standardSpeedPwmDelta = 0;
 }
 
 LineFollower::~LineFollower() {
@@ -681,7 +681,7 @@ bool LineFollower::ObjectLoadSetup(ConfigurationDataBase &cdbData,
             AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s zeroDriveControl not specified. Using default: %f", Name(), zeroDriveControl);
         }
 
-        int32 standardSpeedPwmDelta = 12;
+        standardSpeedPwmDelta = 12;
         if (!cdb.ReadInt32(standardSpeedPwmDelta, "StandardSpeedControlPwmDelta", 12)) {
 
             AssertErrorCondition(Warning, "LineFollower::ObjectLoadSetup: %s standardSpeedPwmDelta not specified. Using default: %d", Name(),
@@ -905,6 +905,45 @@ bool LineFollower::Execute() {
 
 bool LineFollower::ProcessHttpMessage(HttpStream &hStream) {
 
+    FString plusStr;
+    plusStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.Plus")) {
+        hStream.Seek(0);
+        hStream.GetToken(plusStr, "");
+        hStream.Switch((uint32) 0);
+        standardSpeedPwmDelta++;
+        standardSpeedControl = zeroSpeedControl + standardSpeedPwmDelta * (speedControlMax - speedControlMin) / (speedPwmMax - speedPwmMin);
+    }
+
+    FString minusStr;
+    minusStr.SetSize(0);
+    hStream.Seek(0);
+
+    if (hStream.Switch("InputCommands.Minus")) {
+        hStream.Seek(0);
+        hStream.GetToken(minusStr, "");
+        hStream.Switch((uint32) 0);
+        standardSpeedPwmDelta--;
+        standardSpeedControl = zeroSpeedControl + standardSpeedPwmDelta * (speedControlMax - speedControlMin) / (speedPwmMax - speedPwmMin);
+    }
+
+    hStream.SSPrintf("OutputHttpOtions.Content-Type", "text/html");
+
+    hStream.keepAlive = False;
+    hStream.WriteReplyHeader(False);
+
+    hStream.Printf("<html><head><title>CoolCar-Diagnostics</title></head>\n");
+    hStream.Printf("<script src=\"http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js\"></script>\n");
+
+    hStream.Printf("<body>\n");
+    hStream.Printf("<form>");
+    hStream.Printf("<button type=\"submit\" name=\"Plus\" value=\"1\">+</button>\n");
+    hStream.Printf("<button type=\"submit\" name=\"Minus\" value=\"1\">-</button>\n");
+    hStream.Printf("</form>\n\n");
+
+    hStream.Printf("</body></html>");
+    hStream.WriteReplyHeader(True);
 
     return True;
 }

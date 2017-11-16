@@ -40,7 +40,6 @@
 #include "GenericAcqModule.h"
 #include "File.h"
 #include "CamModule.h"
-
 //TODO Opencv stuff
 
 /*---------------------------------------------------------------------------*/
@@ -128,9 +127,14 @@ private:
 
     bool showCamera;
     bool manualDrive;
+    bool useModel;
+    int32 camMode;
     float driveReference;
     float speedReference;
 
+    float speedRefModelSat;
+     float speedStepModelStep;
+     float driveStepModelStep;
 };
 
 /*---------------------------------------------------------------------------*/

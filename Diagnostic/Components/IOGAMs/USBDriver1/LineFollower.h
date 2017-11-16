@@ -173,7 +173,7 @@ private:
 
     //outputBuffer
     char* outputBuffer;
-
+    int32 standardSpeedPwmDelta;
 };
 
 /*---------------------------------------------------------------------------*/

@@ -1,0 +1,84 @@
+
+const canvasWidth=710;
+const canvasHeight=400;
+
+const carLength = 200;
+const carWidth = 100;
+const carHeight = 50;
+
+const wheelRadius = 50;
+const wheelHeight=20;
+
+const wheelSpeed=0.1;
+
+function setup(){
+  createCanvas(canvasWidth, canvasHeight, WEBGL);
+  wheelTexture=loadImage("assets/wheel.jpg");
+  carTexture=loadImage("assets/car.jpg");
+}
+
+function draw(){
+  background(250);
+  
+  normalMaterial();
+ 
+  translate(0, -100, 0);
+
+  push();
+  rotateY(((mouseX-canvasWidth/2)/(canvasWidth/2))*(3.14/2));
+  rotateX(((mouseY-canvasHeight/2)/(canvasHeight/2))*(3.14/2));
+//  rotateY(frameCount * 0.01);
+  texture(carTexture);
+  box(100, 50, carLength);
+
+     push();
+     translate(-(carWidth+wheelHeight)/2,0,-carLength/2);
+     rotateZ(3.14/2);
+     texture(wheelTexture);
+     rotateY(frameCount * wheelSpeed);
+     cylinder(wheelRadius,wheelHeight);
+     pop();
+
+     push();
+     translate((carWidth+wheelHeight)/2,0,-carLength/2);
+     rotateZ(3.14/2);
+     texture(wheelTexture);
+     rotateY(frameCount * wheelSpeed);
+     cylinder(wheelRadius,wheelHeight);
+     pop();
+  
+     push();
+     translate(-(carWidth+wheelHeight)/2,0,carLength/2);
+     rotateZ(3.14/2);
+     texture(wheelTexture);
+     rotateY(frameCount * wheelSpeed);
+     cylinder(wheelRadius,wheelHeight);
+     pop();
+
+     push();
+     translate((carWidth+wheelHeight)/2,0,carLength/2);
+     rotateZ(3.14/2);
+     texture(wheelTexture);
+     rotateY(frameCount * wheelSpeed);
+     cylinder(wheelRadius,wheelHeight);
+     pop();
+
+  pop();
+  /*
+  translate(240, 0, 0);
+  push();
+  rotateZ(frameCount * 0.01);
+  rotateX(frameCount * 0.01);
+  rotateY(frameCount * 0.01);
+  cylinder(70, 70);
+  pop();
+  
+  
+  translate(0, 200, 0);
+  push();
+  rotateZ(frameCount * 0.01);
+  rotateX(frameCount * 0.01);
+  rotateY(frameCount * 0.01);
+  sphere(70);
+  pop();*/
+}

@@ -83,6 +83,10 @@ CoolCarDiagnostic::CoolCarDiagnostic() {
     speedPwmMin = 0;
     speedPwmMax = 0;
 
+    speedRefModelSat = 0.;
+    speedStepModelStep = 0.;
+    driveStepModelStep = 0.;
+
     frameMat = NULL;
 
     //outputBuffer
@@ -104,6 +108,8 @@ CoolCarDiagnostic::CoolCarDiagnostic() {
     speed = 0.;
     showCamera = false;
     manualDrive = false;
+    useModel = false;
+    camMode = 0;
     speedReference = 0.;
     driveReference = 0.;
 }
@@ -187,6 +193,8 @@ bool CoolCarDiagnostic::ObjectLoadSetup(ConfigurationDataBase &cdbData,
         }
         if (showCamera != 0) {
             showCamera = 1;
+            camMode = 2;
+
         }
 
         if (!cdb.ReadFloat(driveRefStep, "DriveRefStep", 0.)) {
@@ -235,6 +243,18 @@ bool CoolCarDiagnostic::ObjectLoadSetup(ConfigurationDataBase &cdbData,
             AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s zeroDriveControl not specified. Using default: %f", Name(), zeroDriveControl);
         }
 
+        if (!cdb.ReadFloat(speedRefModelSat, "CoolCarDiagnostic", 1000.)) {
+            AssertErrorCondition(Warning, "RemoteDriverClient::ObjectLoadSetup: %s SpeedRefRemoteSat not specified. Using default: %f", Name(),
+                                 speedRefModelSat);
+        }
+        if (!cdb.ReadFloat(speedStepModelStep, "SpeedStepModel", 20.)) {
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s SpeedStepModelStep not specified. Using default: %f", Name(),
+                                 speedStepModelStep);
+        }
+        if (!cdb.ReadFloat(driveStepModelStep, "DriveStepModel", 50.)) {
+            AssertErrorCondition(Warning, "CoolCarDiagnostic::ObjectLoadSetup: %s DriveStepModelStep not specified. Using default: %f", Name(),
+                                 driveStepModelStep);
+        }
     }
     return ret;
 }
@@ -325,23 +345,34 @@ bool CoolCarDiagnostic::Execute() {
 }
 
 bool CoolCarDiagnostic::ProcessHttpMessage(HttpStream &hStream) {
-
-    vector < uchar > buf;
-    imencode(".jpg", *frameMat, buf);
-
-    string encoded = base64_encode(&buf[0], buf.size());
-
     FString ajaxString;
-    ajaxString.SetSize(0);
-    if (showCamera) {
-        ajaxString.Printf("var imgData = \"data:image/jpg;base64,%s\";\n", encoded.c_str());
+    string encoded;
+
+    switch (camMode) {
+    case 1: {
+        vector < uchar > buf;
+        Mat *grayFrame = new Mat(frameMat->size(), CV_8UC1);
+        cvtColor(*frameMat, *grayFrame, CV_BGR2GRAY);
+        imencode(".jpg", *grayFrame, buf);
+        encoded = base64_encode(&buf[0], buf.size());
+        delete grayFrame;
     }
-    else {
-        //ajaxString.Printf("var imgData = [];\n");
+        break;
+    case 2: {
+        vector < uchar > buf;
+        imencode(".jpg", *frameMat, buf);
+        encoded = base64_encode(&buf[0], buf.size());
+    }
+    }
+
+
+    if (showCamera) {
+        ajaxString.SetSize(0);
+        ajaxString.Printf("var imgData = \"data:image/jpg;base64,%s\";\n", encoded.c_str());
     }
 
     ajaxString.Printf("var diagnosticData = [%f, %f, %f, %f, %f];\n", x, y, theta, speed, omega);
-
+#if 0
     FString showImageStr;
     showImageStr.SetSize(0);
 
@@ -417,7 +448,6 @@ bool CoolCarDiagnostic::ProcessHttpMessage(HttpStream &hStream) {
         driveReference += driveRefStep;
     }
 
-
     FString stopSpeedStr;
     stopSpeedStr.SetSize(0);
     hStream.Seek(0);
@@ -472,8 +502,8 @@ bool CoolCarDiagnostic::ProcessHttpMessage(HttpStream &hStream) {
         hStream.Printf("document.getElementById(\"myimage\").src=imgData;\n");
     }
     hStream.Printf("for(i=0; i<5; i++){\n"
-                   "document.getElementById(\"cell\"+i).innerHTML=diagnosticData[i];\n"
-                   "}\n");
+            "document.getElementById(\"cell\"+i).innerHTML=diagnosticData[i];\n"
+            "}\n");
 
     /*      hStream.Printf("var canvas = document.getElementById(\"canvas\");\n"
      "var context = canvas.getContext(\"2d\");\n"
@@ -519,6 +549,302 @@ bool CoolCarDiagnostic::ProcessHttpMessage(HttpStream &hStream) {
     hStream.Printf("</body></html>");
     hStream.WriteReplyHeader(True);
     return True;
+#endif
+
+    FString showImageStr;
+    showImageStr.SetSize(0);
+
+    if (hStream.Switch("InputCommands.showImage")) {
+        hStream.Seek(0);
+        hStream.GetToken(showImageStr, "");
+        hStream.Switch((uint32) 0);
+    }
+
+    if (showImageStr == "1") {
+        showCamera = !showCamera;
+    }
+
+    FString useModelStr;
+    useModelStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.useModel")) {
+        hStream.Seek(0);
+        hStream.GetToken(useModelStr, "");
+        hStream.Switch((uint32) 0);
+    }
+
+    if (useModelStr == "1") {
+        useModel = !useModel;
+    }
+
+    FString manualStr;
+    manualStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.manualDriveButton")) {
+        hStream.Seek(0);
+        hStream.GetToken(manualStr, "");
+        hStream.Switch((uint32) 0);
+    }
+    if (manualStr == "1") {
+        manualDrive = !manualDrive;
+    }
+
+    FString refreshData;
+    refreshData.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.ImgRefreshData")) {
+        hStream.Seek(0);
+        hStream.GetToken(refreshData, "");
+        hStream.Switch((uint32) 0);
+        hStream.Printf("%s\n", ajaxString.Buffer());
+        hStream.WriteReplyHeader(True);
+        return True;
+    }
+
+    FString upStr;
+    upStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.Up")) {
+        hStream.Seek(0);
+        hStream.GetToken(upStr, "");
+        hStream.Switch((uint32) 0);
+        speedReference += speedRefStep;
+    }
+
+    FString downStr;
+    downStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.Down")) {
+        hStream.Seek(0);
+        hStream.GetToken(downStr, "");
+        hStream.Switch((uint32) 0);
+        speedReference -= speedRefStep;
+    }
+
+    FString rightStr;
+    rightStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.Right")) {
+        hStream.Seek(0);
+        hStream.GetToken(rightStr, "");
+        hStream.Switch((uint32) 0);
+        driveReference -= driveRefStep;
+    }
+
+    FString leftStr;
+    leftStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.Left")) {
+        hStream.Seek(0);
+        hStream.GetToken(leftStr, "");
+        hStream.Switch((uint32) 0);
+        driveReference += driveRefStep;
+    }
+
+    FString stopSpeedStr;
+    stopSpeedStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.stopSpeed")) {
+        hStream.Seek(0);
+        hStream.GetToken(stopSpeedStr, "");
+        hStream.Switch((uint32) 0);
+        speedReference = 0;
+    }
+
+    FString stopDriveStr;
+    stopDriveStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.stopDrive")) {
+        hStream.Seek(0);
+        hStream.GetToken(stopDriveStr, "");
+        hStream.Switch((uint32) 0);
+        driveReference = 0;
+    }
+
+    FString camModeStr;
+    camModeStr.SetSize(0);
+    hStream.Seek(0);
+    if (hStream.Switch("InputCommands.camMode")) {
+        hStream.Seek(0);
+        hStream.GetToken(camModeStr, "");
+        hStream.Switch((uint32) 0);
+        camMode = atoi(camModeStr.Buffer());
+    }
+
+    if (!manualDrive) {
+        FString driveRefStr;
+        driveRefStr.SetSize(0);
+        hStream.Seek(0);
+        if (hStream.Switch("InputCommands.driveRefInBox")) {
+            hStream.Seek(0);
+            hStream.GetToken(driveRefStr, "");
+            hStream.Switch((uint32) 0);
+            driveReference = atoi(driveRefStr.Buffer());
+        }
+        FString speedRefStr;
+        speedRefStr.SetSize(0);
+        hStream.Seek(0);
+        if (hStream.Switch("InputCommands.speedRefInBox")) {
+            hStream.Seek(0);
+            hStream.GetToken(speedRefStr, "");
+            hStream.Switch((uint32) 0);
+            speedReference = atoi(speedRefStr.Buffer());
+        }
+    }
+
+    hStream.SSPrintf("OutputHttpOtions.Content-Type", "text/html");
+
+    hStream.keepAlive = False;
+    hStream.WriteReplyHeader(False);
+
+    hStream.Printf("<html><head><title>CoolCar-Diagnostics</title></head>\n");
+    hStream.Printf("<script src=\"http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js\"></script>\n");
+
+    hStream.Printf("<body onload=\"timedUpdate();\">\n");
+    if (useModel) {
+        hStream.Printf("<script language=\"javascript\" type=\"text/javascript\" src=\"/P5_DIR/libraries/p5.js\"></script>\n");
+        hStream.Printf("<script>\n");
+
+        hStream.Printf("const PI=3.14159265358979323846;\n"
+                       "const canvasWidth=710;\n"
+                       "const canvasHeight=400;\n"
+                       "const carLength = 200;\n"
+                       "const carWidth = 100;\n"
+                       "const carHeight = 50;\n"
+                       "const wheelRadius = 45;\n"
+                       "const wheelHeight=25;\n"
+                       "const rightDriveSat=-PI/5;\n"
+                       "const leftDriveSat=PI/5;\n"
+                       "const carPitch=PI/4;\n"
+                       "var driveRef=0;\n"
+                       "var speedGraphVal=0;\n"
+                       "const speedGraphStep=0.1;\n"
+                       "var speedRef=0;\n"
+                       "var driveGraphVal=0;\n");
+        hStream.Printf("const speedStep=50;\n", driveStepModelStep);
+        hStream.Printf("const driveStep=%f;\n", driveStepModelStep);
+        hStream.Printf("const driveRefSat=%f;\n", driveControlMax);
+        hStream.Printf("const speedRefSat=%f;\n", speedRefModelSat);
+        hStream.Printf("const driveFactor=(%f*PI/180)/%f;\n", -directionMinOut, driveControlMax);
+        hStream.Printf("const driveGraphFactor=leftDriveSat/%f;\n", driveControlMax);
+
+        hStream.Printf("</script>\n");
+
+        hStream.Printf("<script language=\"javascript\" type=\"text/javascript\" src=\"/P5_DIR/sketch.js\"></script>\n");
+    }
+    if (showCamera) {
+        hStream.Printf("<img src=\"\" id=\"myimage\" />\n");
+    }
+    hStream.Printf("<script>\n");
+
+    hStream.Printf("var request = new XMLHttpRequest();\n");
+    hStream.Printf("var requestPost = new XMLHttpRequest();\n");
+    hStream.Printf("var camModeVar = 0;\n");
+    hStream.Printf("var driveRefVar = 0;\n");
+    hStream.Printf("var speedRefVar = 0;\n");
+    if (!useModel) {
+        hStream.Printf("var driveRef=0;\n");
+        hStream.Printf("var speedRef=0;\n");
+    }
+    hStream.Printf("function timedUpdate() {\n");
+    hStream.Printf("if ((driveRefVar!=driveRef)||(speedRefVar!=speedRef)");
+    if (showCamera) {
+        hStream.Printf("||(camModeVar!=document.getElementById(\"camModeId\").value)");
+    }
+    hStream.Printf(") {\n");
+    hStream.Printf("requestPost.open('POST', \"\", true);\n");
+    hStream.Printf("requestPost.setRequestHeader(\"Content-type\", \"application/x-www-form-urlencoded\");\n");
+    hStream.Printf("requestPost.onreadystatechange = function() {\n");
+    hStream.Printf("if(requestPost.readyState == 4 && requestPost.status == 200) {\n");
+    hStream.Printf("}\n}\n");
+
+    hStream.Printf("var posturl=\"driveRefInBox=\"+eval(driveRef)+\"&&speedRefInBox=\"+eval(speedRef);\n"
+                   "driveRefVar=driveRef;\n"
+                   "speedRefVar=speedRef;\n");
+    if (showCamera) {
+        hStream.Printf("camModeVar=document.getElementById(\"camModeId\").value;\n"
+                       "posturl+=\"&&camMode=\"+eval(camModeVar);\n");
+    }
+    hStream.Printf("requestPost.send(posturl);\n");
+    hStream.Printf("}\n");
+    hStream.Printf("var url = \"?ImgRefreshData\";\n");
+    hStream.Printf("request.open('GET', url, true);\n");
+    hStream.Printf("request.onreadystatechange = imgManager;\n");
+    hStream.Printf("request.send(null);\n");
+    hStream.Printf("window.setTimeout(timedUpdate, %d);\n", httpRefreshTime);
+    hStream.Printf("}\n");
+
+    hStream.Printf("function imgManager() {\n");
+    hStream.Printf("if(this.readyState != 4 || this.status != 200) {\n");
+    hStream.Printf("return;\n");
+    hStream.Printf("}\n");
+    hStream.Printf("eval(request.responseText);\n");
+//hStream.Printf("img.src=imgData;\n");
+    if (showCamera) {
+        hStream.Printf("document.getElementById(\"myimage\").src=imgData;\n");
+        //hStream.Printf("document.getElementById(\"camModeId\").value=\"1\";\n");
+    }
+    if (useModel) {
+
+        hStream.Printf("document.getElementById(\"driveRefInBoxId\").value=eval(driveRef);\n");
+        hStream.Printf("document.getElementById(\"speedRefInBoxId\").value=eval(speedRef);\n");
+    }
+    hStream.Printf("for(i=0; i<5; i++){\n"
+                   "document.getElementById(\"cell\"+i).innerHTML=diagnosticData[i];\n"
+                   "}\n");
+
+    /*      hStream.Printf("var canvas = document.getElementById(\"canvas\");\n"
+     "var context = canvas.getContext(\"2d\");\n"
+     "context.drawImage(img, 0, 0);\n");
+     */
+    hStream.Printf("}\n");
+
+    hStream.Printf("</script>\n");
+
+    hStream.Printf("<h1>Current diagnostics:</h1><br />");
+    hStream.Printf("<p>Data was updated %f seconds ago<p/>", ((float) (HRT::HRTCounter() - lastUpdateTime) * (float) HRT::HRTPeriod()));
+
+    hStream.Printf("<table border=\"1\"><tr><th></th><th>Last value</th></tr>");
+
+    hStream.Printf("<tr><th>%s</th>", "X position");
+    hStream.Printf("<td id=\"cell0\">%.3e</td></tr>", x);
+    hStream.Printf("<tr><th>%s</th>", "Y position");
+    hStream.Printf("<td id=\"cell1\">%.3e</td></tr>", y);
+    hStream.Printf("<tr><th>%s</th>", "Theta");
+    hStream.Printf("<td id=\"cell2\">%.3e</td></tr>", theta);
+    hStream.Printf("<tr><th>%s</th>", "Speed");
+    hStream.Printf("<td id=\"cell3\">%.3e</td></tr>", speed);
+    hStream.Printf("<tr><th>%s</th>", "Omega");
+    hStream.Printf("<td id=\"cell4\">%.3e</td></tr>", omega);
+
+    hStream.Printf("</table><br />");
+
+    hStream.Printf("<form>");
+    hStream.Printf("<button type=\"submit\" name=\"showImage\" value=\"1\">Show/Hide Camera</button>\n");
+    hStream.Printf("<button type=\"submit\" name=\"useModel\" value=\"1\">Show/Hide Model</button><br>\n");
+    hStream.Printf("<button type=\"submit\" name=\"manualDriveButton\" value=\"1\">Manual Drive</button><br>\n");
+
+    if (manualDrive) {
+        hStream.Printf("<button type=\"submit\" name=\"Up\" value=\"1\">UP</button>\n");
+        hStream.Printf("<button type=\"submit\" name=\"Left\" value=\"1\">LEFT</button>\n");
+        hStream.Printf("<button type=\"submit\" name=\"Right\" value=\"1\">RIGHT</button>\n");
+        hStream.Printf("<button type=\"submit\" name=\"Down\" value=\"1\">DOWN</button><br>\n");
+
+        hStream.Printf("<button type=\"submit\" name=\"stopSpeed\" value=\"1\">STOP SPEED</button>\n");
+        hStream.Printf("<button type=\"submit\" name=\"stopDrive\" value=\"1\">STOP DRIVE</button>\n");
+    }
+    if (showCamera) {
+        hStream.Printf("<br><input type=\"number\" id=\"camModeId\" name=\"camMode\"><br>\n");
+    }
+    hStream.Printf("<br><input type=\"text\" id=\"driveRefInBoxId\" name=\"driveRefInBox\">\n");
+    hStream.Printf("<br><input type=\"text\" id=\"speedRefInBoxId\" name=\"speedRefInBox\"><br>\n");
+    hStream.Printf("</form>\n\n");
+
+    hStream.Printf("</body></html>");
+    hStream.WriteReplyHeader(True);
+
+    return True;
+
 }
 
 OBJECTLOADREGISTER(CoolCarDiagnostic, "$Id:CoolCarDiagnostic.cpp,v 1.1.1.1 2010-01-20 12:26:47 pc Exp $")
